@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>2_jpg.rf.51dce5067bf7b2a547c5a57f6ffa730a.jpg</filename>
+	<path>2_jpg.rf.51dce5067bf7b2a547c5a57f6ffa730a.jpg</path>
+	<source>
+		<database>roboflow.ai</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>Drain Hole</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>257</xmin>
+			<xmax>420</xmax>
+			<ymin>220</ymin>
+			<ymax>314</ymax>
+		</bndbox>
+	</object>
+</annotation>

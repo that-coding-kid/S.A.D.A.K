@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>Pothole-325_jpg.rf.7c459d3b69cb1f98abc0ed27879374c6.jpg</filename>
+	<path>Pothole-325_jpg.rf.7c459d3b69cb1f98abc0ed27879374c6.jpg</path>
+	<source>
+		<database>roboflow.ai</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>Pothole</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>155</xmin>
+			<xmax>516</xmax>
+			<ymin>193</ymin>
+			<ymax>352</ymax>
+		</bndbox>
+	</object>
+</annotation>

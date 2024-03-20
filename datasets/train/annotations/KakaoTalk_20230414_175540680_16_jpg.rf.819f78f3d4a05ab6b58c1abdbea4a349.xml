@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>KakaoTalk_20230414_175540680_16_jpg.rf.819f78f3d4a05ab6b58c1abdbea4a349.jpg</filename>
+	<path>KakaoTalk_20230414_175540680_16_jpg.rf.819f78f3d4a05ab6b58c1abdbea4a349.jpg</path>
+	<source>
+		<database>roboflow.ai</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>Sewer Cover</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>301</xmin>
+			<xmax>451</xmax>
+			<ymin>204</ymin>
+			<ymax>291</ymax>
+		</bndbox>
+	</object>
+</annotation>

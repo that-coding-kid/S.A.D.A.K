@@ -1,0 +1,14 @@
+<annotation>
+	<folder></folder>
+	<filename>KakaoTalk_20230407_154711521_04_jpg.rf.fd0b0dcdc3ec099f0094d71e604e0ac7.jpg</filename>
+	<path>KakaoTalk_20230407_154711521_04_jpg.rf.fd0b0dcdc3ec099f0094d71e604e0ac7.jpg</path>
+	<source>
+		<database>roboflow.ai</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+</annotation>

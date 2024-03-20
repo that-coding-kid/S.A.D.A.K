@@ -1,0 +1,27 @@
+<annotation>
+	<folder></folder>
+	<filename>43_jpg.rf.d309e821ecb26e980d90058063bc11e0.jpg</filename>
+	<path>43_jpg.rf.d309e821ecb26e980d90058063bc11e0.jpg</path>
+	<source>
+		<database>roboflow.ai</database>
+	</source>
+	<size>
+		<width>640</width>
+		<height>640</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>Sewer Cover</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<occluded>0</occluded>
+		<bndbox>
+			<xmin>52</xmin>
+			<xmax>592</xmax>
+			<ymin>32</ymin>
+			<ymax>619</ymax>
+		</bndbox>
+	</object>
+</annotation>
