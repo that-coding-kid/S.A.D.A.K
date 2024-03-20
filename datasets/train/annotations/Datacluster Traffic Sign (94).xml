@@ -1,0 +1,33 @@
+<annotation>
+  <folder></folder>
+  <filename>Datacluster Traffic Sign (94).jpg</filename>
+  <source>
+    <database>Unknown</database>
+    <annotation>Unknown</annotation>
+    <image>Unknown</image>
+  </source>
+  <size>
+    <width>3096</width>
+    <height>4128</height>
+    <depth></depth>
+  </size>
+  <segmented>0</segmented>
+  <object>
+    <name>traffic_sign</name>
+    <truncated>0</truncated>
+    <occluded>0</occluded>
+    <difficult>0</difficult>
+    <bndbox>
+      <xmin>1448.44</xmin>
+      <ymin>1365.87</ymin>
+      <xmax>1635.97</xmax>
+      <ymax>1614.5</ymax>
+    </bndbox>
+    <attributes>
+      <attribute>
+        <name>rotation</name>
+        <value>0.0</value>
+      </attribute>
+    </attributes>
+  </object>
+</annotation>
