@@ -1,0 +1,10 @@
+pothole
+encroachment
+sever_cover
+drainhole
+t_sign_no_parking
+t_sign_general
+vehicle
+traffic_signal
+person
+

@@ -1,1 +1,1 @@
-{"labels": ["potholes", "traffic_sign", "unknown"], "anchors": [19, 17, 51, 25, 75, 52, 132, 91, 257, 129, 237, 222]}
+{"labels": ["potholes", "traffic_signs", "vehicles", "pedestrian", "unknown"], "anchors": [19, 16, 42, 32, 83, 49, 125, 83, 183, 108, 256, 194]}

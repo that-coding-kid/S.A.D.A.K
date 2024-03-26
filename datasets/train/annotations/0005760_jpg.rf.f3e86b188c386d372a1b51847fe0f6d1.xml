@@ -1,9 +1,9 @@
 <annotation>
-	<folder></folder>
+	<folder>images</folder>
 	<filename>0005760_jpg.rf.f3e86b188c386d372a1b51847fe0f6d1.jpg</filename>
-	<path>0005760_jpg.rf.f3e86b188c386d372a1b51847fe0f6d1.jpg</path>
+	<path>/home/dev/Documents/GitHub/S.A.D.A.K/datasets-yolo/train/images/0005760_jpg.rf.f3e86b188c386d372a1b51847fe0f6d1.jpg</path>
 	<source>
-		<database>roboflow.ai</database>
+		<database>Unknown</database>
 	</source>
 	<size>
 		<width>640</width>
@@ -16,25 +16,23 @@
 		<pose>Unspecified</pose>
 		<truncated>0</truncated>
 		<difficult>0</difficult>
-		<occluded>0</occluded>
 		<bndbox>
 			<xmin>161</xmin>
-			<xmax>234</xmax>
 			<ymin>419</ymin>
+			<xmax>234</xmax>
 			<ymax>474</ymax>
 		</bndbox>
 	</object>
 	<object>
 		<name>Pothole</name>
 		<pose>Unspecified</pose>
-		<truncated>0</truncated>
+		<truncated>1</truncated>
 		<difficult>0</difficult>
-		<occluded>0</occluded>
 		<bndbox>
 			<xmin>3</xmin>
-			<xmax>207</xmax>
 			<ymin>523</ymin>
-			<ymax>641</ymax>
+			<xmax>207</xmax>
+			<ymax>640</ymax>
 		</bndbox>
 	</object>
 	<object>
@@ -42,11 +40,10 @@
 		<pose>Unspecified</pose>
 		<truncated>0</truncated>
 		<difficult>0</difficult>
-		<occluded>0</occluded>
 		<bndbox>
 			<xmin>352</xmin>
-			<xmax>381</xmax>
 			<ymin>427</ymin>
+			<xmax>381</xmax>
 			<ymax>461</ymax>
 		</bndbox>
 	</object>
