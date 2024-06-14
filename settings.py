@@ -2,6 +2,7 @@ from pathlib import Path
 import sys
 import supervision as sv
 import os
+import streamlit as st
 # Get the absolute path of the current file
 FILE = Path(__file__).resolve()
 # Get the parent directory of the current file
