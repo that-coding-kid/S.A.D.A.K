@@ -1,0 +1,17 @@
+streamlit_login_auth_ui-0.2.0.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+streamlit_login_auth_ui-0.2.0.dist-info/LICENSE,sha256=gAc5HsD0bcdNoRNjvPciuhpA4xjpwDBop0YLOHazwJs,1086
+streamlit_login_auth_ui-0.2.0.dist-info/METADATA,sha256=JLlFt-E5BlVKfY85iVY8yrbnhdariwRCfFFLE3mJILE,5102
+streamlit_login_auth_ui-0.2.0.dist-info/RECORD,,
+streamlit_login_auth_ui-0.2.0.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+streamlit_login_auth_ui-0.2.0.dist-info/WHEEL,sha256=G16H4A3IeoQmnOrYV4ueZGKSjhipXx8zc8nu9FGlvMA,92
+streamlit_login_auth_ui-0.2.0.dist-info/top_level.txt,sha256=O5OS39a0GqRYh1-FmG6yBaB-FXfLKRG6lVsnfAOh56g,30
+streamlit_login_auth_ui/__init__.py,sha256=Sew1GinNg-s9VpxpA-0fekm1M6-hH1OWAQSS0Fa34V8,146
+streamlit_login_auth_ui/__pycache__/__init__.cpython-310.pyc,,
+streamlit_login_auth_ui/__pycache__/utils.cpython-310.pyc,,
+streamlit_login_auth_ui/__pycache__/widgets.cpython-310.pyc,,
+streamlit_login_auth_ui/utils.py,sha256=CR3TgevKk47iCUksHggumMRKuPMTlFDMjKbNjtv70R8,6987
+streamlit_login_auth_ui/widgets.py,sha256=pKIarvOOuDeHLHlSTkojpIJQR2sdH-SZKAUgZsoD2L4,13646
+tests/__init__.py,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+tests/__pycache__/__init__.cpython-310.pyc,,
+tests/__pycache__/test_run.cpython-310.pyc,,
+tests/test_run.py,sha256=XvUQTkFRBhCNAVhj0DFlBs2G35m3OW8W6595q_umybQ,482

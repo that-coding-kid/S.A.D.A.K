@@ -3,11 +3,12 @@ from pathlib import Path
 import PIL
 # External packages
 import streamlit as st
-from streamlit_login_auth_ui.widgets import __login__
+from structures.streamlit_login_auth_ui.widgets import __login__
 from structures.essentials import load_model
 # Local Modules
 import settings
 import helper
+from googletrans import Translator
 
 # Setting page layout
 st.set_page_config(
@@ -15,51 +16,57 @@ st.set_page_config(
         page_icon="🤖",
         layout="wide",
         initial_sidebar_state="expanded"
-    )
-st.title("S.A.D.A.K")
+    ) 
+
+language = st.sidebar.selectbox('Language: ', ["English", "ಕನ್ನಡ", "हिंदी", "বাংলা", "ગુજરાતી","മലയാളം","मराठी","தமிழ்","తెలుగు","اردو","ਪੰਜਾਬੀ","संस्कृत", "অসমীয়া","भोजपुरी","डोगरी","मैथिली","Mizo tawng","Manipuri",])
+language_dict = {"English":"en","हिंदी":"hi","ಕನ್ನಡ":"kn","অসমীয়া":"as","বাংলা":"bn","ગુજરાતી":"gu","മലയാളം":"ml","मराठी":"mr","தமிழ்":"ta","తెలుగు":"te","اردو":"ur","ਪੰਜਾਬੀ":"pa","संस्कृत":"sanskrit","भोजपुरी":"bhojpuri","डोगरी":"dogri","मैथिली":"maithili","Mizo tawng":"mizo","Manipuri":"manipuri"}
+st.title(settings.COMPONENTS[language_dict[language]]["TITLE"])
 __login__obj = __login__(auth_token = "pk_prod_PVY78PYNS84M1SPFKZSCHD1D32BS", 
                     company_name = "S.A.D.A.K",
                     width = 200, height = 250, 
-                    logout_button_name = 'Logout', hide_menu_bool = False, 
+                    logout_button_name = settings.COMPONENTS[language_dict[language]]["LOGOUT"], hide_menu_bool = False, 
                     hide_footer_bool = False, 
-                    lottie_url = 'https://assets2.lottiefiles.com/packages/lf20_jcikwtux.json')
+                    lottie_url = 'https://assets2.lottiefiles.com/packages/lf20_jcikwtux.json',
+                    language = language_dict[language]
+                    )
 
 LOGGED_IN = __login__obj.build_login_ui()
+
 
 if LOGGED_IN == True:
     # Main page heading
     # Sidebar
-    st.sidebar.header("Configuration")
+    st.sidebar.header(settings.COMPONENTS[language_dict[language]]["CONFIGURATION"])
     helper.startup()
     # Model Options
     model_type = st.sidebar.radio(
-        "Select Task", ['Detection', 'Segmentation'])
+        settings.COMPONENTS[language_dict[language]]["MODEL_TYPE"], [settings.COMPONENTS[language_dict[language]]["DETECTION"], settings.COMPONENTS[language_dict[language]]["SEGMENTATION"]])
 
     confidence = float(st.sidebar.slider(
-        "Select Model Confidence", 25, 100, 40)) / 100
+        settings.COMPONENTS[language_dict[language]]["CONFIDENCE"], 25, 100, 40)) / 100
 
     # Selecting Detection Or Segmentation
-    if model_type == 'Detection':
+    if model_type == settings.COMPONENTS[language_dict[language]]["DETECTION"]:
         model_path = Path(settings.DETECTION_MODEL)
-    elif model_type == 'Segmentation':
+    elif model_type == settings.COMPONENTS[language_dict[language]]["SEGMENTATION"]:
         model_path = Path(settings.SEGMENTATION_MODEL)
 
     # Load Pre-trained ML Model
     try:
         model = load_model(model_path)
     except Exception as ex:
-        st.error(f"Unable to load model. Check the specified path: {model_path}")
+        st.error(settings.COMPONENTS[language_dict[language]]["LOAD_ERROR"]+model_path)
         st.error(ex)
 
-    st.sidebar.header("Image/Video Config")
+    st.sidebar.header(settings.COMPONENTS[language_dict[language]]["CONFIG_SUBTITLE"])
     source_radio = st.sidebar.radio(
-        "Select Source", settings.SOURCES_LIST)
+        settings.COMPONENTS[language_dict[language]]["SELECT_SOURCE"], [settings.COMPONENTS[language_dict[language]]["IMAGE"],settings.COMPONENTS[language_dict[language]]["VIDEO"],settings.COMPONENTS[language_dict[language]]["RTSP"],settings.COMPONENTS[language_dict[language]]["YOUTUBE"],settings.COMPONENTS[language_dict[language]]["ENCROACHMENT"],settings.COMPONENTS[language_dict[language]]["JUNCTION"],settings.COMPONENTS[language_dict[language]]["JUNCTIONEVAL"],settings.COMPONENTS[language_dict[language]]["BENCHMARKING"]])
 
     source_img = None
     # If image is selected
-    if source_radio == settings.IMAGE:
+    if source_radio == settings.COMPONENTS[language_dict[language]]["IMAGE"]:
         source_img = st.sidebar.file_uploader(
-            "Choose an image...", type=("jpg", "jpeg", "png", 'bmp', 'webp'))
+            settings.COMPONENTS[language_dict[language]]["SOURCE_IMG"], type=("jpg", "jpeg", "png", 'bmp', 'webp'))
 
         col1, col2 = st.columns(2)
 
@@ -75,7 +82,7 @@ if LOGGED_IN == True:
                     st.image(source_img, caption="Uploaded Image",
                             use_column_width=True)
             except Exception as ex:
-                st.error("Error occurred while opening the image.")
+                st.error(settings.COMPONENTS[language_dict[language]]["IMG_ERROR"])
                 st.error(ex)
 
         with col2:
@@ -86,7 +93,7 @@ if LOGGED_IN == True:
                 st.image(default_detected_image_path, caption='Detected Image',
                         use_column_width=True)
             else:
-                if st.sidebar.button('Detect Objects'):
+                if st.sidebar.button(settings.COMPONENTS[language_dict[language]]["DETECT_OBJ"]):
                     res = model.predict(uploaded_image,
                                         conf=confidence
                                         )
@@ -95,32 +102,32 @@ if LOGGED_IN == True:
                     st.image(res_plotted, caption='Detected Image',
                             use_column_width=True)
                     try:
-                        with st.expander("Detection Results"):
+                        with st.expander(settings.COMPONENTS[language_dict[language]]["DETECTION_RES"]):
                             for box in boxes:
                                 st.write(box.data)
                     except Exception as ex:
                         # st.write(ex)
-                        st.write("No image is uploaded yet!")
+                        st.write(settings.COMPONENTS[language_dict[language]]["NO_IMG"])
 
-    elif source_radio == settings.VIDEO:
-        helper.play_stored_video(confidence, model)
+    elif source_radio == settings.COMPONENTS[language_dict[language]]["VIDEO"]:
+        helper.play_stored_video(confidence, model,language_dict[language])
 
-    elif source_radio == settings.RTSP:
-        helper.play_rtsp_stream(confidence, model)
+    elif source_radio == settings.COMPONENTS[language_dict[language]]["RTSP"]:
+        helper.play_rtsp_stream(confidence, model,language_dict[language])
 
-    elif source_radio == settings.YOUTUBE:
-        helper.play_youtube_video(confidence, model)
+    elif source_radio == settings.COMPONENTS[language_dict[language]]["YOUTUBE"]:
+        helper.play_youtube_video(confidence, model,language_dict[language])
         
-    elif source_radio == settings.ENCROACHMENT:
-        helper.enchroachment()
+    elif source_radio == settings.COMPONENTS[language_dict[language]]["ENCROACHMENT"]:
+        helper.enchroachment(confidence,language_dict[language])
         
-    elif source_radio == settings.JUNCTION:  
-        helper.junctionEvaluationDataset()
+    elif source_radio == settings.COMPONENTS[language_dict[language]]["JUNCTION"]:  
+        helper.junctionEvaluationDataset(language_dict[language])
         
-    elif source_radio == settings.JUNCTIONEVAL:
-        helper.junctionEvaluation()
+    elif source_radio == settings.COMPONENTS[language_dict[language]]["JUNCTIONEVAL"]:
+        helper.junctionEvaluation(language_dict[language])
         
-    elif source_radio == settings.BENCHMARKING:
-        helper.benchMarking()
+    elif source_radio == settings.COMPONENTS[language_dict[language]]["BENCHMARKING"]:
+        helper.benchMarking(confidence,language_dict[language])
     else:
         st.error("Please select a valid source type!")

@@ -39,22 +39,28 @@ current_mouse_position: Optional[Tuple[int, int]] = None
 
 
 
-def timedetect(source_path, zone_configuration_path, violation_time):
+def timedetect(source_path, zone_configuration_path, violation_time,confidence, language: str):
     COLORS = sv.ColorPalette.from_hex(["#E6194B", "#3CB44B", "#FFE119", "#3C76D1"])
     COLOR_ANNOTATOR = sv.ColorAnnotator(color=COLORS)
     LABEL_ANNOTATOR = sv.LabelAnnotator(
     color=COLORS, text_color=sv.Color.from_hex("#000000")
     )
-    model_id = "yolov8x-640"
+    time_in_seconds = False
+    time_in_minutes = False
+    if(violation_time>=1):
+        time_in_minutes = True
+    else:
+        time_in_seconds = True
+    model_id = "yolov8m-640"
     classes = [2,5,6,7]
-    confidence = 0.3
     iou = 0.7
     model = get_roboflow_model(model_id=model_id)
-    tracker = sv.ByteTrack(minimum_matching_threshold=0.5)
+    tracker = sv.ByteTrack(minimum_matching_threshold=confidence)
     video_info = sv.VideoInfo.from_video_path(video_path=source_path)
     frames_generator = sv.get_video_frames_generator(source_path)
 
     polygons = load_zones_config(file_path=zone_configuration_path)
+    
     zones = [
         sv.PolygonZone(
             polygon=polygon,
@@ -68,7 +74,7 @@ def timedetect(source_path, zone_configuration_path, violation_time):
     st_frame = st.empty()
     while(vid_cap.isOpened()):
             success = vid_cap.read()
-            st.subheader("ALERTS: ")
+            st.subheader(settings.COMPONENTS[language]["ALERTS"])
             if success:
                     for frame in frames_generator:
                         results = model.infer(frame, confidence=confidence, iou_threshold=iou)[0]
@@ -106,12 +112,20 @@ def timedetect(source_path, zone_configuration_path, violation_time):
                             
                             for tracker_ID, time, cl in zip(detections_in_zone.tracker_id, time_in_zone, detections_in_zone.class_id):
                                 if tracker_ID not in displayed:
-                                    if(time%60 >= float(violation_time)):
-                                        violations.append(tracker_ID)
-                                        cla = settings.CLASSES[cl]
-                                        s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: CrossingX "
-                                        st.warning(s, icon= "⚠️")
-                                        displayed[tracker_ID] = 1
+                                    if(time_in_minutes):
+                                        if(time//60 >= float(violation_time)):
+                                            violations.append(tracker_ID)
+                                            cla = settings.CLASSES[cl]
+                                            s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: CrossingX "
+                                            st.warning(s, icon= "⚠️")
+                                            displayed[tracker_ID] = 1
+                                    if(time_in_seconds):
+                                        if(time%60 >= float(violation_time*60)):
+                                            violations.append(tracker_ID)
+                                            cla = settings.CLASSES[cl]
+                                            s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: CrossingX "
+                                            st.warning(s, icon= "⚠️")
+                                            displayed[tracker_ID] = 1
                         
                         st_frame.image(annotated_frame,
                                    caption='Detected Video',
@@ -123,10 +137,10 @@ def timedetect(source_path, zone_configuration_path, violation_time):
 
 
 
-def livedetection(source_url: str, violation_time: int, zone_configuration_path: str):
+def livedetection(source_url: str, violation_time: int, zone_configuration_path: str, confidence: float):
     model_id = 'yolov8x-640'
     classes = [2,5,6,7]
-    confidence = 0.3
+    
     iou = 0.7
     model = YOLO('weights\yolov8n.pt')
     sink = CustomSink(zone_configuration_path=zone_configuration_path, classes=classes, violation_time = violation_time)

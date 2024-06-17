@@ -8,13 +8,13 @@ import supervision as sv
 from tqdm import tqdm
 
 from typing import Any, Optional, Tuple, Dict, Iterable, List, Set
-
+import settings
 import cv2
 import numpy as np
 from utils.general import load_zones_config
 
 from collections import Counter
-
+from googletrans import Translator
 from structures.DetectionManager import DetectionsManager
 
 KEY_ENTER = 13
@@ -38,6 +38,7 @@ LABEL_ANNOTATOR = sv.LabelAnnotator(
 current_mouse_position: Optional[Tuple[int, int]] = None
 
 
+
 def initiate_polygon_zones(
     polygons: List[np.ndarray],
     triggering_anchors: Iterable[sv.Position] = [sv.Position.CENTER],
@@ -56,6 +57,7 @@ class VideoProcessor:
         source_video_path: str,
         zoneIN_configuration_path: str,
         zoneOUT_configuration_path: str,
+        language: str = 'en',
         target_video_path: str = None,
         confidence_threshold: float = 0.3,
         iou_threshold: float = 0.7,
@@ -70,7 +72,7 @@ class VideoProcessor:
         self.time = time
         self.model = YOLO(source_weights_path)
         self.tracker = sv.ByteTrack()
-
+        self.language = language
         self.video_info = sv.VideoInfo.from_video_path(source_video_path)
         ZONE_IN_POLYGONS = load_zones_config(file_path=zoneIN_configuration_path)
         ZONE_OUT_POLYGONS = load_zones_config(file_path=zoneOUT_configuration_path)
@@ -96,7 +98,7 @@ class VideoProcessor:
         while(vid_cap.isOpened()):
             success = vid_cap.read()
             if(success):
-                st.subheader("ALERTS: ")
+                st.subheader(settings.COMPONENTS[self.language]["FLOW_HEADER"])
                 if self.target_video_path:
                     with sv.VideoSink(self.target_video_path, self.video_info) as sink:
                         for frame in tqdm(frame_generator, total=self.video_info.total_frames):
@@ -156,7 +158,7 @@ class VideoProcessor:
                         temp_1 = Counter(curr_count_dict)
                         temp_1.subtract(prev_count_dict)
                         temp_1 = dict(temp_1)
-                        st.warning(temp_1)
+                        st.write(temp_1)
                         prev_count_dict = curr_count_dict.copy()
                         called = 1
                         
@@ -170,12 +172,17 @@ class VideoProcessor:
                
         return annotated_frame
       
-        
+ 
+      
     def process_frame(self, frame: np.ndarray) -> np.ndarray:
+        
         results = self.model(
             frame, verbose=False, conf=self.conf_threshold, iou=self.iou_threshold
         )[0]
+        
         detections = sv.Detections.from_ultralytics(results)
+        detections = detections[detections.class_id>=1]
+
         detections.class_id = np.zeros(len(detections))
         detections = self.tracker.update_with_detections(detections)
 
@@ -192,3 +199,5 @@ class VideoProcessor:
             detections, detections_in_zones, detections_out_zones
         )
         return self.annotate_frame(frame, detections)
+
+        

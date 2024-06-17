@@ -10,6 +10,8 @@ from typing import Any, Optional, Tuple, Dict, Iterable, List, Set
 import cv2
 import numpy as np
 import streamlit as st
+import settings
+
 KEY_ENTER = 13
 KEY_NEWLINE = 10
 KEY_ESCAPE = 27
@@ -36,12 +38,12 @@ def drawzones(source_path, zone_configuration_path):
     def resolve_source(source_path: str) -> Optional[np.ndarray]:
         if not os.path.exists(source_path):
             return None
-        if(source_path!="D:\\repos\\deploy\\videos\\Footage_Feed_5.MP4"):
+        if(source_path.split('\\')[-1]!="Footage_Feed_5.MP4"):
             image = cv2.imread(source_path)
             if image is not None:
                 return image
         else:
-            image = cv2.imread("D:\\repos\\deploy\\videos\\Footage_Feed_5.jpg")
+            image = cv2.imread("videos\\Footage_Feed_5.jpg")
             if image is not None:
                 return image
 
@@ -167,11 +169,11 @@ def load_model(model_path):
     return model
 
 
-def display_tracker_options():
-    display_tracker = st.radio("Display Tracker", ('Yes', 'No'))
-    is_display_tracker = True if display_tracker == 'Yes' else False
+def display_tracker_options(language: str):
+    display_tracker = st.radio(settings.COMPONENTS[language]["DISPLAY_TRACKER"], (settings.COMPONENTS[language]["YES"], settings.COMPONENTS[language]["NO"]))
+    is_display_tracker = True if display_tracker == settings.COMPONENTS[language]["YES"] else False
     if is_display_tracker:
-        tracker_type = st.radio("Tracker", ("bytetrack.yaml", "botsort.yaml"))
+        tracker_type = st.radio(settings.COMPONENTS[language]["TRACKER"], ("bytetrack.yaml", "botsort.yaml"))
         return is_display_tracker, tracker_type
     return is_display_tracker, None
 
