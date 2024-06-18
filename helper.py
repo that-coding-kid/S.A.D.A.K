@@ -21,7 +21,7 @@ from structures.essentials import display_tracker_options, _display_detected_fra
 from structures.encroachment import timedetect, livedetection
 from structures.benchmarking_queue import BenchMarking
 from PIL import Image
-
+from scripts.jxnEvaluator import *
 KEY_ENTER = 13
 KEY_NEWLINE = 10
 KEY_ESCAPE = 27
@@ -31,7 +31,7 @@ COLORS = sv.ColorPalette.DEFAULT
 CARD_IMAGE_SIZE = (300, int(300*0.5625))
 VIDEO_DIR_PATH = f"videos/"
 IMAGES_DIR_PATH = f"images/"
-
+DETECTIONS_DIR_PATH = f"detections/"
 
 
 class JunctionEvaluation:
@@ -367,8 +367,7 @@ def Analyze(language):
             if(st.button("Encrypt")):    
                 encrypt_it(path_csv=file_path)
                 st.success("Encryption Successful!")
-
-                  
+   
 def get_first_frame(video_path, size=CARD_IMAGE_SIZE):
     """Extract the first frame from a video file and resize it to the given size."""
     vidcap = cv2.VideoCapture(video_path)
@@ -383,62 +382,109 @@ def get_first_frame(video_path, size=CARD_IMAGE_SIZE):
 
 def loadDetections(video_path):
     """
-    Check for a corresponding .dat file for the given video in the detections directory.
-    If it doesn't exist, create the necessary folders and return.
+    Ensure the necessary directories exist for the given video path in the detections directory.
+    If they don't exist, create them and add an empty sample.txt file.
     """
+
     video_relative_path = os.path.relpath(video_path, VIDEO_DIR_PATH)
     detections_path = os.path.join('detections', video_relative_path)
     detections_path = os.path.splitext(detections_path)[0] + '.dat'
-    
-    if not os.path.exists(detections_path):
-        os.makedirs(os.path.dirname(detections_path), exist_ok=True)
+    detections_dir = os.path.dirname(detections_path)
+    print(detections_dir)
+    if not os.path.exists(detections_dir):
+        os.makedirs(detections_dir, exist_ok=True)
+        sample_file_path = os.path.join(detections_dir, 'sample.txt')
+        with open(sample_file_path, 'w') as f:
+            pass
 
-    return detections_path
+    if not os.path.exists(detections_path):
+        return detections_path, False
+    else:
+        return detections_path, True
 
 def junctionEvaluation(language):
     global CURRENT_DIR_PATH
+
     if ("current_dir_path" not in st.session_state):
         st.session_state.current_dir_path = VIDEO_DIR_PATH
 
-    st.title("Video Gallery")
-    if (st.session_state.current_dir_path!=VIDEO_DIR_PATH):
+    st.text(st.session_state.current_dir_path)
+    if ("current_det_path" not in st.session_state):
+        st.session_state.current_det_path = DETECTIONS_DIR_PATH
+
+    isVideo = False
+    if (st.session_state.current_dir_path.endswith(('.mp4', '.avi','.mov'))):
+        isVideo = True
+    
+    if (isVideo):
+        col1, col2 = st.columns([3,1])
+        with col1:
+            st.title("Analysis: " + st.session_state.current_dir_path[st.session_state.current_dir_path.rfind("/")+1:])
+        with col2:
+            if (st.button("Back to video gallery")):
+                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind('/')+1]
+                st.rerun()
+        detections_path, exists = loadDetections(st.session_state.current_dir_path)
+        if (not exists):
+            st.subheader("Detections not found!")
+            if (st.button("Obtain and save detections")):
+                detections = get_detections(st.session_state.current_dir_path)
+                saveDetections(detections=detections,filename=detections_path)
+                pass
+        else:
+            st.subheader("Detections found!")
+            col1, col2 = st.columns([0.1, 0.3])
+            with col1:
+                st.button("Analyze whole junction")
+            with col2:
+                st.button("✨ Roadwise Analysisᴮᴱᵀᴬ")
+
+    else:
+        st.title("Video Gallery")
+
+    if (isVideo == False and st.session_state.current_dir_path!=VIDEO_DIR_PATH):
         if (st.button("Back")):
             st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")]
             st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")+1]
             st.rerun()
 
-    st.text(st.session_state.current_dir_path)
 
     # Specify the directory containing videos
 
     # Fetch query parameters
 
     # Fetch all video files
-    video_files = [f for f in os.listdir(st.session_state.current_dir_path) if f.endswith(('.mp4', '.avi','.mov'))]
-    folders = [f for f in os.listdir(st.session_state.current_dir_path) if '.' not in f]
-    # Display videos in a grid
-    cols = st.columns(3)  # Adjust the number of columns as needed
-    video_files = folders+video_files
-    for idx, video_file in enumerate(video_files):
-        with cols[idx % 3]:  # Change 3 to the number of columns you want
-            video_path = os.path.join(st.session_state.current_dir_path, video_file)
-            first_frame = get_first_frame(video_path)
-            if (idx < len(folders)):
-                first_frame = Image.open(IMAGES_DIR_PATH+"/FolderIcon.png")
-                first_frame = first_frame.resize(CARD_IMAGE_SIZE, Image.LANCZOS)
-                st.image(first_frame, use_column_width=True)
-                st.write(video_file)
-                if st.button(f"Navigate to {video_file}", key=video_file):
-                    st.session_state.current_dir_path= st.session_state.current_dir_path+video_file+"/"
-                    st.experimental_rerun()
-                    
-            else:
-                if first_frame:
+    if (not isVideo):
+        video_files = [f for f in os.listdir(st.session_state.current_dir_path) if f.endswith(('.mp4', '.avi','.mov'))]
+        folders = [f for f in os.listdir(st.session_state.current_dir_path) if '.' not in f]
+        # Display videos in a grid
+        cols = st.columns(3)  # Adjust the number of columns as needed
+        video_files = folders+video_files
+        for idx, video_file in enumerate(video_files):
+            with cols[idx % 3]:  # Change 3 to the number of columns you want
+                video_path = os.path.join(st.session_state.current_dir_path, video_file)
+                first_frame = get_first_frame(video_path)
+                if (idx < len(folders)):
+                    first_frame = Image.open(IMAGES_DIR_PATH+"/FolderIcon.png")
+                    first_frame = first_frame.resize(CARD_IMAGE_SIZE, Image.LANCZOS)
                     st.image(first_frame, use_column_width=True)
                     st.write(video_file)
-                    if st.button(f"Analyze {video_file}", key=video_file):
+                    if st.button(f"Navigate to {video_file}", key=video_file):
+                        st.session_state.current_dir_path= st.session_state.current_dir_path+video_file+"/"
+                        st.rerun()
+                        
+                else:
+                    if first_frame:
+                        st.image(first_frame, use_column_width=True)
+                        st.write(video_file)
+                        if st.button(f"Analyze {video_file}", key=video_file):
+                            st.session_state.current_dir_path = st.session_state.current_dir_path+video_file
+                            st.rerun()
+                            
 
-                        pass
+                            
+
+
         
     '''# if (len(settings.EVALUATION_DICT.keys()) == 0):
     #     st.sidebar.error("Create a dataset first")
