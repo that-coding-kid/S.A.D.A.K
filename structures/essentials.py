@@ -11,6 +11,10 @@ import cv2
 import numpy as np
 import streamlit as st
 import settings
+from cryptography.fernet import Fernet
+from locales.settings_languages import COMPONENTS
+import pandas
+
 
 KEY_ENTER = 13
 KEY_NEWLINE = 10
@@ -170,10 +174,10 @@ def load_model(model_path):
 
 
 def display_tracker_options(language: str):
-    display_tracker = st.radio(settings.COMPONENTS[language]["DISPLAY_TRACKER"], (settings.COMPONENTS[language]["YES"], settings.COMPONENTS[language]["NO"]))
-    is_display_tracker = True if display_tracker == settings.COMPONENTS[language]["YES"] else False
+    display_tracker = st.radio(COMPONENTS[language]["DISPLAY_TRACKER"], (COMPONENTS[language]["YES"], COMPONENTS[language]["NO"]))
+    is_display_tracker = True if display_tracker == COMPONENTS[language]["YES"] else False
     if is_display_tracker:
-        tracker_type = st.radio(settings.COMPONENTS[language]["TRACKER"], ("bytetrack.yaml", "botsort.yaml"))
+        tracker_type = st.radio(COMPONENTS[language]["TRACKER"], ("bytetrack.yaml", "botsort.yaml"))
         return is_display_tracker, tracker_type
     return is_display_tracker, None
 
@@ -197,3 +201,55 @@ def _display_detected_frames(conf, model, st_frame, image, is_display_tracking=N
                    channels="BGR",
                    use_column_width=True
                    )
+def load_key():
+    return settings.ENCRYPTION_KEY
+
+def make_headings(path_csv: str, csv_list):
+    if(len(csv_list)>0):
+        with open(path_csv,'w') as f:
+            f.write(",".join(csv_list[len(csv_list)-1].keys()))
+            f.write('\n')
+
+def save_to_csv(path_csv: str, csv_list):
+    if(len(csv_list)>0):
+        
+        with open(path_csv,'a') as f:
+            for row in csv_list:
+                f.write(",".join(str(x) for x in row.values()))
+                f.write('\n')
+
+
+def encrypt_it(path_csv):
+    key = load_key()
+    
+    
+    f = Fernet(key)
+    encrpyted = ''
+    try:
+        with open(path_csv,'rb') as unencrypted:
+            _file = unencrypted.read()
+            encrpyted = f.encrypt(_file)
+            
+        with open(path_csv,"wb") as encrypted_file:
+            encrypted_file.write(encrpyted)
+    except Exception:
+        pass
+
+def decrypt_it(path_csv, key):
+    f = Fernet(key)
+    
+    with open(path_csv,'rb') as encrypted_file:
+        encrypted = encrypted_file.read()
+    decrypted = f.decrypt(encrypted)
+    
+    with open(path_csv,'wb') as dec_file:
+        dec_file.write(decrypted)
+    
+  
+
+
+def drop(path_csv, csv_list):
+    df = pandas.read_csv(path_csv)
+    df.drop_duplicates(subset=csv_list)
+    df.to_csv(path_csv, index= False)
+        

@@ -7,7 +7,7 @@ import supervision as sv
 
 
 import settings
-
+from locales.settings_languages import COMPONENTS
 from typing import Any, Optional, Tuple, Dict, Iterable, List, Set
 
 import cv2
@@ -16,7 +16,7 @@ from inference import get_roboflow_model
 from utils.general import find_in_list, load_zones_config
 from utils.timers import FPSBasedTimer
 from inference import InferencePipeline
-
+from structures.essentials import save_to_csv, encrypt_it,make_headings, drop
 from structures.CustomSink import CustomSink
 
 KEY_ENTER = 13
@@ -31,6 +31,7 @@ WINDOW_NAME = "Draw Zones"
 POLYGONS = [[]]
 violations = []
 displayed={}
+headings_made = False
 COLOR_ANNOTATOR = sv.ColorAnnotator(color=COLORS)
 LABEL_ANNOTATOR = sv.LabelAnnotator(
     color=COLORS, text_color=sv.Color.from_hex("#000000")
@@ -38,13 +39,15 @@ LABEL_ANNOTATOR = sv.LabelAnnotator(
 current_mouse_position: Optional[Tuple[int, int]] = None
 
 
-
-def timedetect(source_path, zone_configuration_path, violation_time,confidence, language: str):
+def timedetect(source_path, zone_configuration_path, violation_time, confidence, language: str, analysis_path: str):
     COLORS = sv.ColorPalette.from_hex(["#E6194B", "#3CB44B", "#FFE119", "#3C76D1"])
     COLOR_ANNOTATOR = sv.ColorAnnotator(color=COLORS)
     LABEL_ANNOTATOR = sv.LabelAnnotator(
     color=COLORS, text_color=sv.Color.from_hex("#000000")
     )
+    terminate = st.sidebar.button("Terminate Stream")
+    csv_list =[]
+    alert_dicts = {}
     time_in_seconds = False
     time_in_minutes = False
     if(violation_time>=1):
@@ -58,7 +61,7 @@ def timedetect(source_path, zone_configuration_path, violation_time,confidence, 
     tracker = sv.ByteTrack(minimum_matching_threshold=confidence)
     video_info = sv.VideoInfo.from_video_path(video_path=source_path)
     frames_generator = sv.get_video_frames_generator(source_path)
-
+    global headings_made
     polygons = load_zones_config(file_path=zone_configuration_path)
     
     zones = [
@@ -74,7 +77,7 @@ def timedetect(source_path, zone_configuration_path, violation_time,confidence, 
     st_frame = st.empty()
     while(vid_cap.isOpened()):
             success = vid_cap.read()
-            st.subheader(settings.COMPONENTS[language]["ALERTS"])
+            st.subheader(COMPONENTS[language]["ALERTS"])
             if success:
                     for frame in frames_generator:
                         results = model.infer(frame, confidence=confidence, iou_threshold=iou)[0]
@@ -114,36 +117,77 @@ def timedetect(source_path, zone_configuration_path, violation_time,confidence, 
                                 if tracker_ID not in displayed:
                                     if(time_in_minutes):
                                         if(time//60 >= float(violation_time)):
+                                            done_once = False
                                             violations.append(tracker_ID)
                                             cla = settings.CLASSES[cl]
-                                            s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: CrossingX "
+                                            alert_dicts["Tracker_ID"] = str(tracker_ID)
+                                            alert_dicts["Class"] = cla
+                                            alert_dicts["Location"] = idx
+                                            s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: "+str(idx)
                                             st.warning(s, icon= "⚠️")
                                             displayed[tracker_ID] = 1
+                                            if(alert_dicts not in csv_list):                                            
+                                                csv_list.append(alert_dicts)
+                                            if(not headings_made):
+                                                make_headings(analysis_path,csv_list)
+                                                save_to_csv(analysis_path,csv_list)
+                                                headings_made = True
+                                            else:
+                                                if(not done_once):
+                                                    save_to_csv(analysis_path,csv_list)
+                                                    drop(analysis_path,csv_list)
+                                                    #encrypt_it(analysis_path)
+                                                    done_once = True
+                                                    continue
+                                                
+                                            
                                     if(time_in_seconds):
                                         if(time%60 >= float(violation_time*60)):
                                             violations.append(tracker_ID)
+                                            done_once = False
                                             cla = settings.CLASSES[cl]
-                                            s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: CrossingX "
+                                            alert_dicts["Tracker_ID"] = str(tracker_ID)
+                                            alert_dicts["Class"] = cla
+                                            alert_dicts["Location"] = str(idx)
+                                            s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: "+str(idx)
                                             st.warning(s, icon= "⚠️")
-                                            displayed[tracker_ID] = 1
-                        
+                                            displayed[tracker_ID] = 1  
+                                            if(alert_dicts not in csv_list):                                          
+                                                csv_list.append(alert_dicts)
+                                            
+                                            if(not headings_made):
+                                                make_headings(analysis_path,csv_list)
+                                                save_to_csv(analysis_path,csv_list)
+                                                headings_made = True
+                                            else:
+                                                if(not done_once):
+                                                    save_to_csv(analysis_path,csv_list)
+                                                    #encrypt_it(analysis_path)
+                                                    done_once = True
+                                                    continue
+
+
                         st_frame.image(annotated_frame,
                                    caption='Detected Video',
                                    channels="BGR",
                                    use_column_width=True)
-                    vid_cap.release()
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
+                        if(terminate):
+                            return
+                    
+            if terminate:
+                return
+                
 
 
 
-def livedetection(source_url: str, violation_time: int, zone_configuration_path: str, confidence: float):
+def livedetection(source_url: str, violation_time: int, zone_configuration_path: str, confidence: float, analysis_path: str):
     model_id = 'yolov8x-640'
     classes = [2,5,6,7]
-    
+    frame = st.empty()
     iou = 0.7
     model = YOLO('weights\yolov8n.pt')
-    sink = CustomSink(zone_configuration_path=zone_configuration_path, classes=classes, violation_time = violation_time)
+    terminate = st.button("Terminate Stream")
+    sink = CustomSink(zone_configuration_path=zone_configuration_path, classes=classes, violation_time = violation_time, frame=frame, analysis_path = analysis_path)
 
     pipeline = InferencePipeline.init(
         model_id=model_id,
@@ -152,35 +196,12 @@ def livedetection(source_url: str, violation_time: int, zone_configuration_path:
         confidence=confidence,
         iou_threshold=iou,
     )
-
-    pipeline.start()
-
-    try:
-        pipeline.join()
-    except KeyboardInterrupt:
-        pipeline.terminate()
-        
-        
     
-def liveevaluation(source_url: str, zone_configuration_path: str):
-    model_id = 'yolov8x-640'
-    classes = [2,5,6,7]
-    confidence = 0.3
-    iou = 0.7
-    model = YOLO('weights\yolov8n.pt')
-    sink = CustomSink(zone_configuration_path=zone_configuration_path, classes=classes)
-
-    pipeline = InferencePipeline.init(
-        model_id=model_id,
-        video_reference=source_url,
-        on_prediction=sink.on_prediction,
-        confidence=confidence,
-        iou_threshold=iou,
-    )
 
     pipeline.start()
 
     try:
         pipeline.join()
-    except KeyboardInterrupt:
+    except terminate:
         pipeline.terminate()
+
