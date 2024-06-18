@@ -158,13 +158,13 @@ def enchroachment(confidence: float, language: str):
     source_url = st.sidebar.text_input(COMPONENTS[language]["SOURCE_URL_RTSP"])
     if st.sidebar.button(COMPONENTS[language]["BOTTLENECK_ERRORS"]):
         if(source_url): 
-            zones_configuration_path = "configure\ZONESFootage_Feed_2.mp4.json"
-            analysis_path = "analysis\encroachments\data_"+source_url+".csv"
+            zones_configuration_path = "configure/ZONESFootage_Feed_2.mp4.json"
+            analysis_path = "analysis/encroachments/data_"+source_url+".csv"
             livedetection(source_url=source_url, violation_time=int(time), zone_configuration_path=zones_configuration_path,confidence=confidence, analysis_path=analysis_path)
         else:
-            new_path = source_path.split("\\")[-1]
-            zones_configuration_path = "configure\ZONES"+new_path+".json" 
-            analysis_path = "analysis\encroachments\data_encroachment"+new_path+".csv"
+            new_path = source_path.split("/")[-1]
+            zones_configuration_path = "configure/ZONES"+new_path+".json" 
+            analysis_path = "analysis/encroachments/data_encroachment"+new_path+".csv"
             if(os.path.exists(zones_configuration_path)):
                 timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path)
                             
@@ -249,7 +249,7 @@ def benchMarking(confidence: float, language:str):
     time = st.sidebar.text_input(COMPONENTS[language]["ACCURACY_INTERVAL"])
     choice = st.sidebar.radio(COMPONENTS[language]["BENCHMARKING_CRIT"], [COMPONENTS[language]["BENCHMARKING_FLOW"], COMPONENTS[language]["BENCHMARKING_QUEUE_LENGTH"]])
     
-    new_path = source_path.split("\\")[-1]
+    new_path = source_path.split("/")[-1]
     
     zones_IN_configuration_path = "configure/ZONES_IN"+new_path+".json"
     zones_OUT_configuration_path = "configure/ZONES_OUT"+new_path+".json"
@@ -268,7 +268,7 @@ def benchMarking(confidence: float, language:str):
             if traffic_data is not None:
                 df = pandas.read_csv(traffic_data)
                 if(choice == COMPONENTS[language]["BENCHMARKING_FLOW"]):
-                    analysis_path = "analysis\\accuracy\Flow Rate\data_flow_rate"+new_path+".csv"
+                    analysis_path = "analysis/accuracy/Flow Rate/data_flow_rate"+new_path+".csv"
                     processor = VideoProcessor(
                     source_weights_path=weight_path,
                     source_video_path=source_path,
@@ -281,7 +281,7 @@ def benchMarking(confidence: float, language:str):
                 )
                     processor.process_video()
                 elif COMPONENTS[language]["BENCHMARKING_QUEUE_LENGTH"]:
-                    analysis_path = "analysis\\accuracy\Queue Length\data_queuelength"+new_path+".csv"
+                    analysis_path = "analysis/accuracy/Queue Length/data_queuelength"+new_path+".csv"
                     BenchMarking(source_path=source_path, zones_IN_configuration_path=zones_IN_configuration_path, weight_path=weight_path, dataFrame=df, time_analysis=float(time),confidence=confidence, language=language, analysis_path=analysis_path)
             else:
                 st.sidebar.warning(COMPONENTS[language]["TRAFFIC_DATA_NOT_UPLOADED"])
