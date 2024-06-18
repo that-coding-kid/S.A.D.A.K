@@ -20,6 +20,7 @@ from structures.essentials import drawzones, decrypt_it, encrypt_it
 from structures.essentials import display_tracker_options, _display_detected_frames, load_model
 from structures.encroachment import timedetect, livedetection
 from structures.benchmarking_queue import BenchMarking
+from PIL import Image
 
 KEY_ENTER = 13
 KEY_NEWLINE = 10
@@ -27,6 +28,10 @@ KEY_ESCAPE = 27
 KEY_QUIT = ord("q")
 KEY_SAVE = ord("s")
 COLORS = sv.ColorPalette.DEFAULT
+CARD_IMAGE_SIZE = (300, int(300*0.5625))
+VIDEO_DIR_PATH = f"videos/"
+IMAGES_DIR_PATH = f"images/"
+
 
 
 class JunctionEvaluation:
@@ -48,8 +53,7 @@ class JunctionEvaluation:
         mainFunc(self.sourcePath,cycle,finalpath)
         settings.updateDirectories()
         return finalpath
-            
-        
+                
 def startup():
     settings.updateDirectories()
 
@@ -115,8 +119,6 @@ def play_stored_video(conf, model,language):
         except Exception as e:
             st.sidebar.error(COMPONENTS[language]["VIDEO_ERROR"] + str(e))
 
-
-
 def play_rtsp_stream(conf, model, language):
     source_rtsp = st.sidebar.text_input(COMPONENTS[language]["RTSPSTREAM"])
     st.sidebar.caption('Example URL: rtsp://admin:12345@192.168.1.210:554/Streaming/Channels/101')
@@ -144,7 +146,6 @@ def play_rtsp_stream(conf, model, language):
         except Exception as e:
             vid_cap.release()
             st.sidebar.error(COMPONENTS[language]["RTSP_ERROR"] + str(e))
-
 
 def enchroachment(confidence: float, language: str):
     source_vid = st.sidebar.selectbox(
@@ -198,45 +199,44 @@ def junctionEvaluationDataset(language: str):
             returnPath = jxnEvalInstance.datasetCreation(cycle=cycle)
             st.sidebar.write(COMPONENTS[language]["SUCCESS_DATA"]+returnPath)
                   
-def junctionEvaluation(language):
-    if (len(settings.EVALUATION_DICT.keys()) == 0):
-        st.sidebar.error(COMPONENTS[language]["DATASET_NOT_THERE"])
-    else:
-        source_dir = st.sidebar.selectbox(
-        COMPONENTS[language]["CHOOSE_FOLDER"], settings.EVALUATION_DICT.keys())
+# def junctionEvaluation(language):
+#     if (len(settings.EVALUATION_DICT.keys()) == 0):
+#         st.sidebar.error(COMPONENTS[language]["DATASET_NOT_THERE"])
+#     else:
+#         source_dir = st.sidebar.selectbox(
+#         COMPONENTS[language]["CHOOSE_FOLDER"], settings.EVALUATION_DICT.keys())
         
-        source_path = str(settings.EVALUATION_DICT.get(source_dir))
-        source_vid = st.sidebar.selectbox(
-        COMPONENTS[language]["CHOOSE_VID"], settings.FINAL_DICT[source_dir].keys())
+#         source_path = str(settings.EVALUATION_DICT.get(source_dir))
+#         source_vid = st.sidebar.selectbox(
+#         COMPONENTS[language]["CHOOSE_VID"], settings.FINAL_DICT[source_dir].keys())
         
         
-        with open("videos/JunctionEvalDataset/"+source_dir+"/"+source_vid, 'rb') as video_file:
-            video_bytes = video_file.read()
-        if video_bytes:
-            st.video(video_bytes)
+#         with open("videos/JunctionEvalDataset/"+source_dir+"/"+source_vid, 'rb') as video_file:
+#             video_bytes = video_file.read()
+#         if video_bytes:
+#             st.video(video_bytes)
 
-        threshold = st.sidebar.text_input(
-            COMPONENTS[language]["INTEGER_RANGE"]
-        )
+#         threshold = st.sidebar.text_input(
+#             COMPONENTS[language]["INTEGER_RANGE"]
+#         )
 
-        try:
+#         try:
             
-            threshold = int(threshold)
-            if (threshold > 5 or threshold < 1):
-                st.sidebar.error(COMPONENTS[language]["VALID_VALUE"])
-            else:
-                if st.sidebar.button(COMPONENTS[language]["EVALUATION"]):
-                    returnVid = "videos/JunctionEvaluations/IndiraNagarClips/clip1.mp4"
-                    with open(returnVid, 'rb') as video_file2:
-                        video_bytes2 = video_file2.read()
+#             threshold = int(threshold)
+#             if (threshold > 5 or threshold < 1):
+#                 st.sidebar.error(COMPONENTS[language]["VALID_VALUE"])
+#             else:
+#                 if st.sidebar.button(COMPONENTS[language]["EVALUATION"]):
+#                     returnVid = "videos/JunctionEvaluations/IndiraNagarClips/clip1.mp4"
+#                     with open(returnVid, 'rb') as video_file2:
+#                         video_bytes2 = video_file2.read()
                         
-                    if video_bytes2:
-                        st.video(video_bytes2)
+#                     if video_bytes2:
+#                         st.video(video_bytes2)
                     
                                                             
-        except:
-            st.sidebar.error(COMPONENTS[language]["VALID_VALUE"])            
-
+#         except:
+#             st.sidebar.error(COMPONENTS[language]["VALID_VALUE"])            
 
 def benchMarking(confidence: float, language:str):
     source_vid = st.sidebar.selectbox(
@@ -287,9 +287,6 @@ def benchMarking(confidence: float, language:str):
                 st.sidebar.warning(COMPONENTS[language]["TRAFFIC_DATA_NOT_UPLOADED"])
                 return
             
-
-
-
 def Analyze(language):
     auth_token=st.sidebar.text_input("Auth Token",type="password", )
     
@@ -362,8 +359,116 @@ def Analyze(language):
             if(st.button("Encrypt")):    
                 encrypt_it(path_csv=file_path)
                 st.success("Encryption Successful!")
+
+                  
+def get_first_frame(video_path, size=CARD_IMAGE_SIZE):
+    """Extract the first frame from a video file and resize it to the given size."""
+    vidcap = cv2.VideoCapture(video_path)
+    success, image = vidcap.read()
+    if success:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(image)
+        pil_image = pil_image.resize(size, Image.LANCZOS)
+        return pil_image
+    else:
+        return None
+
+def loadDetections(video_path):
+    """
+    Check for a corresponding .dat file for the given video in the detections directory.
+    If it doesn't exist, create the necessary folders and return.
+    """
+    video_relative_path = os.path.relpath(video_path, VIDEO_DIR_PATH)
+    detections_path = os.path.join('detections', video_relative_path)
+    detections_path = os.path.splitext(detections_path)[0] + '.dat'
+    
+    if not os.path.exists(detections_path):
+        os.makedirs(os.path.dirname(detections_path), exist_ok=True)
+
+    return detections_path
+
+def junctionEvaluation(language):
+    global CURRENT_DIR_PATH
+    if ("current_dir_path" not in st.session_state):
+        st.session_state.current_dir_path = VIDEO_DIR_PATH
+
+    st.title("Video Gallery")
+    if (st.session_state.current_dir_path!=VIDEO_DIR_PATH):
+        if (st.button("Back")):
+            st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")]
+            st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")+1]
+            st.rerun()
+
+    st.text(st.session_state.current_dir_path)
+
+    # Specify the directory containing videos
+
+    # Fetch query parameters
+
+    # Fetch all video files
+    video_files = [f for f in os.listdir(st.session_state.current_dir_path) if f.endswith(('.mp4', '.avi','.mov'))]
+    folders = [f for f in os.listdir(st.session_state.current_dir_path) if '.' not in f]
+    # Display videos in a grid
+    cols = st.columns(3)  # Adjust the number of columns as needed
+    video_files = folders+video_files
+    for idx, video_file in enumerate(video_files):
+        with cols[idx % 3]:  # Change 3 to the number of columns you want
+            video_path = os.path.join(st.session_state.current_dir_path, video_file)
+            first_frame = get_first_frame(video_path)
+            if (idx < len(folders)):
+                first_frame = Image.open(IMAGES_DIR_PATH+"/folderIcon.png")
+                first_frame = first_frame.resize(CARD_IMAGE_SIZE, Image.LANCZOS)
+                st.image(first_frame, use_column_width=True)
+                st.write(video_file)
+                if st.button(f"Navigate to {video_file}", key=video_file):
+                    st.session_state.current_dir_path= st.session_state.current_dir_path+video_file+"/"
+                    st.experimental_rerun()
+                    
+            else:
+                if first_frame:
+                    st.image(first_frame, use_column_width=True)
+                    st.write(video_file)
+                    if st.button(f"Analyze {video_file}", key=video_file):
+                        pass
+        
+    '''# if (len(settings.EVALUATION_DICT.keys()) == 0):
+    #     st.sidebar.error("Create a dataset first")
+    # else:
+    #     source_dir = st.sidebar.selectbox(
+    #     "Choose a folder", settings.EVALUATION_DICT.keys())
+        
+    #     source_path = str(settings.EVALUATION_DICT.get(source_dir))
+    #     source_vid = st.sidebar.selectbox(
+    #     "Choose a clip", settings.FINAL_DICT[source_dir].keys())
+        
+        
+    #     with open("videos/JunctionEvalDataset/"+source_dir+"/"+source_vid, 'rb') as video_file:
+    #         video_bytes = video_file.read()
+    #     if video_bytes:
+    #         st.video(video_bytes)
+
+    #     threshold = st.sidebar.text_input(
+    #         "Enter a integer in range 1-5"
+    #     )
+
+    #     try:
             
-            
+    #         threshold = int(threshold)
+    #         if (threshold > 5 or threshold < 1):
+    #             st.sidebar.error("Enter a valid value")
+    #         else:
+    #             if st.sidebar.button("Start Evaluation"):
+    #                 returnVid = "videos/JunctionEvaluations/IndiraNagarClips/clip1.mp4"
+    #                 with open(returnVid, 'rb') as video_file2:
+    #                     video_bytes2 = video_file2.read()
+                        
+    #                 if video_bytes2:
+    #                     st.video(video_bytes2)
+                    
+                                                            
+    #     except:
+    #         st.sidebar.error("Enter a valid integer")'''            
+
             
                 
         
