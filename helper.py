@@ -3,7 +3,7 @@ import streamlit as st
 import cv2
 from pytube import YouTube
 import supervision as sv
-import pandas
+from PIL import Image
 from tqdm import tqdm
 import settings
 
@@ -13,14 +13,14 @@ import shutil
 import cv2
 import numpy as np
 from utils.general import find_in_list, load_zones_config
-from locales.settings_languages import COMPONENTS
+
 from scripts.jxnEvalDataCreation import mainFunc
+
 from structures.VideoProcessor import VideoProcessor
-from structures.essentials import drawzones, decrypt_it, encrypt_it
+from structures.essentials import drawzones
 from structures.essentials import display_tracker_options, _display_detected_frames, load_model
 from structures.encroachment import timedetect, livedetection
-from structures.benchmarking_queue import BenchMarking
-from PIL import Image
+
 
 KEY_ENTER = 13
 KEY_NEWLINE = 10
@@ -28,9 +28,13 @@ KEY_ESCAPE = 27
 KEY_QUIT = ord("q")
 KEY_SAVE = ord("s")
 COLORS = sv.ColorPalette.DEFAULT
-CARD_IMAGE_SIZE = (300,int(300*0.5625))
 VIDEO_DIR_PATH = f"videos/"
-IMAGES_DIR_PATH = f"images/"
+IMAGES_DIR_PATH = f"images"
+CARD_IMAGE_SIZE = (300,int(300*0.5625))
+CURRENT_DIR_PATH = VIDEO_DIR_PATH
+
+if ('current_dir_path' not in st.session_state):
+    st.session_state.current_dir_path = VIDEO_DIR_PATH
 
 class JunctionEvaluation:
     
@@ -51,18 +55,17 @@ class JunctionEvaluation:
         mainFunc(self.sourcePath,cycle,finalpath)
         settings.updateDirectories()
         return finalpath
-            
-        
+ 
 def startup():
     settings.updateDirectories()
 
-def play_youtube_video(conf, model, language):
+def play_youtube_video(conf, model):
 
-    source_youtube = st.sidebar.text_input(COMPONENTS[language]["YOUTUBE_URL"])
+    source_youtube = st.sidebar.text_input("YouTube Video url")
 
-    is_display_tracker, tracker = display_tracker_options(language=language)
+    is_display_tracker, tracker = display_tracker_options()
 
-    if st.sidebar.button(COMPONENTS[language]["DETECT_OBJ"]):
+    if st.sidebar.button('Detect Objects'):
         try:
             yt = YouTube(source_youtube)
             stream = yt.streams.filter(file_extension="mp4", res=720).first()
@@ -83,21 +86,21 @@ def play_youtube_video(conf, model, language):
                     vid_cap.release()
                     break
         except Exception as e:
-            st.sidebar.error(COMPONENTS[language]["VIDEO_ERROR"] + str(e))
+            st.sidebar.error("Error loading video: " + str(e))
 
-def play_stored_video(conf, model,language):
+def play_stored_video(conf, model):
 
     source_vid = st.sidebar.selectbox(
-        COMPONENTS[language]["CHOOSE_VID"], settings.VIDEOS_DICT.keys())
+        "Choose a video...", settings.VIDEOS_DICT.keys())
 
-    is_display_tracker, tracker = display_tracker_options(language=language)
+    is_display_tracker, tracker = display_tracker_options()
 
     with open(settings.VIDEOS_DICT[source_vid], 'rb') as video_file:
         video_bytes = video_file.read()
     if video_bytes:
         st.video(video_bytes)
 
-    if st.sidebar.button(COMPONENTS[language]["DETECT_OBJ"]):
+    if st.sidebar.button('Detect Video Objects'):
         try:
             vid_cap = cv2.VideoCapture(
                 str(settings.VIDEOS_DICT.get(source_vid)))
@@ -116,15 +119,13 @@ def play_stored_video(conf, model,language):
                     vid_cap.release()
                     break
         except Exception as e:
-            st.sidebar.error(COMPONENTS[language]["VIDEO_ERROR"] + str(e))
+            st.sidebar.error("Error loading video: " + str(e))
 
-
-
-def play_rtsp_stream(conf, model, language):
-    source_rtsp = st.sidebar.text_input(COMPONENTS[language]["RTSPSTREAM"])
+def play_rtsp_stream(conf, model):
+    source_rtsp = st.sidebar.text_input("rtsp stream url:")
     st.sidebar.caption('Example URL: rtsp://admin:12345@192.168.1.210:554/Streaming/Channels/101')
-    is_display_tracker, tracker = display_tracker_options(language=language)
-    if st.sidebar.button(COMPONENTS[language]["DETECT_OBJ"]):
+    is_display_tracker, tracker = display_tracker_options()
+    if st.sidebar.button('Detect Objects'):
         try:
             vid_cap = cv2.VideoCapture(source_rtsp)
             st_frame = st.empty()
@@ -146,44 +147,38 @@ def play_rtsp_stream(conf, model, language):
                     break
         except Exception as e:
             vid_cap.release()
-            st.sidebar.error(COMPONENTS[language]["RTSP_ERROR"] + str(e))
+            st.sidebar.error("Error loading RTSP stream: " + str(e))
 
-
-def enchroachment(confidence: float, language: str):
+def enchroachment():
     source_vid = st.sidebar.selectbox(
-    COMPONENTS[language]["CHOOSE_VID"], settings.VIDEOS_DICT.keys())
-    
+    "Choose a video...", settings.VIDEOS_DICT.keys())
     source_path = str(settings.VIDEOS_DICT.get(source_vid))
-    csv_list = []
-    time = st.sidebar.text_input(COMPONENTS[language]["VIOLATION_TIME"])
-    
-    source_url = st.sidebar.text_input(COMPONENTS[language]["SOURCE_URL_RTSP"])
-    if st.sidebar.button(COMPONENTS[language]["BOTTLENECK_ERRORS"]):
+    print(source_path)
+    time = st.sidebar.text_input("Violation Time (in minutes):")
+    source_url = st.sidebar.text_input("Source Url:")
+    cwd = os.getcwd()
+    if st.sidebar.button("Generate Bottleneck Alerts"):
         if(source_url): 
-            zones_configuration_path = "configure\ZONESFootage_Feed_2.mp4.json"
-            analysis_path = "analysis\encroachments\data_"+source_url+".csv"
-            livedetection(source_url=source_url, violation_time=int(time), zone_configuration_path=zones_configuration_path,confidence=confidence, analysis_path=analysis_path)
+            zones_configuration_path = os.path.join(cwd,zones_configuration_path)
+            livedetection(source_url=source_url, violation_time=int(time), zone_configuration_path=zones_configuration_path)
         else:
             new_path = source_path.split("\\")[-1]
-            zones_configuration_path = "configure\ZONES"+new_path+".json" 
-            analysis_path = "analysis\encroachments\data_encroachment"+new_path+".csv"
+            zones_configuration_path = "configure/ZONES"+new_path+".json" 
             if(os.path.exists(zones_configuration_path)):
-                timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path)
-                            
-
+                timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=time*60)
             else:
                 drawzones(source_path = source_path, zone_configuration_path = zones_configuration_path)
-                timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path, csv_list=csv_list)
+                timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=time*60)
                 
-def junctionEvaluationDataset(language: str):
+def junctionEvaluationDataset():
     source_vid = st.sidebar.selectbox(
-    COMPONENTS[language]["CHOOSE_VID"], settings.VIDEOS_DICT.keys())
+    "Choose a video...", settings.VIDEOS_DICT.keys())
     source_path = str(settings.VIDEOS_DICT.get(source_vid))
 
     successVar = False
     cycle = []
     try:
-        cycle = st.sidebar.text_input(COMPONENTS[language]["CYCLE"])
+        cycle = st.sidebar.text_input("Cycle")
         cycle = cycle.split()
         cycle = [int (i) for i in cycle]
         successVar = True
@@ -192,54 +187,15 @@ def junctionEvaluationDataset(language: str):
     # time = st.sidebar.text_input("Violation Time:")
     #source_url = st.sidebar.text_input("Source Url:")
     
-    if st.sidebar.button(COMPONENTS[language]["CREATE_DATASET"]):
+    if st.sidebar.button("Create Dataset"):
         if (successVar == False):
-            st.sidebar.error(COMPONENTS[language]["INVALID_SYNTAX"])
+            st.sidebar.error("Invalid cycle syntax")
             pass
         else:
             jxnEvalInstance = JunctionEvaluation(source_path)
             returnPath = jxnEvalInstance.datasetCreation(cycle=cycle)
-            st.sidebar.write(COMPONENTS[language]["SUCCESS_DATA"]+returnPath)
+            st.sidebar.write("Dataset Created Successfully at "+returnPath)
                   
-# def junctionEvaluation(language):
-#     if (len(settings.EVALUATION_DICT.keys()) == 0):
-#         st.sidebar.error(COMPONENTS[language]["DATASET_NOT_THERE"])
-#     else:
-#         source_dir = st.sidebar.selectbox(
-#         COMPONENTS[language]["CHOOSE_FOLDER"], settings.EVALUATION_DICT.keys())
-        
-#         source_path = str(settings.EVALUATION_DICT.get(source_dir))
-#         source_vid = st.sidebar.selectbox(
-#         COMPONENTS[language]["CHOOSE_VID"], settings.FINAL_DICT[source_dir].keys())
-        
-        
-#         with open("videos/JunctionEvalDataset/"+source_dir+"/"+source_vid, 'rb') as video_file:
-#             video_bytes = video_file.read()
-#         if video_bytes:
-#             st.video(video_bytes)
-
-#         threshold = st.sidebar.text_input(
-#             COMPONENTS[language]["INTEGER_RANGE"]
-#         )
-
-#         try:
-            
-#             threshold = int(threshold)
-#             if (threshold > 5 or threshold < 1):
-#                 st.sidebar.error(COMPONENTS[language]["VALID_VALUE"])
-#             else:
-#                 if st.sidebar.button(COMPONENTS[language]["EVALUATION"]):
-#                     returnVid = "videos/JunctionEvaluations/IndiraNagarClips/clip1.mp4"
-#                     with open(returnVid, 'rb') as video_file2:
-#                         video_bytes2 = video_file2.read()
-                        
-#                     if video_bytes2:
-#                         st.video(video_bytes2)
-                    
-                                                            
-#         except:
-#             st.sidebar.error(COMPONENTS[language]["VALID_VALUE"])            
-
 def get_first_frame(video_path, size=CARD_IMAGE_SIZE):
     """Extract the first frame from a video file and resize it to the given size."""
     vidcap = cv2.VideoCapture(video_path)
@@ -251,8 +207,6 @@ def get_first_frame(video_path, size=CARD_IMAGE_SIZE):
         return pil_image
     else:
         return None
-
-import os
 
 def loadDetections(video_path):
     """
@@ -267,7 +221,6 @@ def loadDetections(video_path):
         os.makedirs(os.path.dirname(detections_path), exist_ok=True)
 
     return detections_path
-
 
 def junctionEvaluation():
     global CURRENT_DIR_PATH
@@ -313,133 +266,181 @@ def junctionEvaluation():
                     if st.button(f"Analyze {video_file}", key=video_file):
                         pass
         
+    '''# if (len(settings.EVALUATION_DICT.keys()) == 0):
+    #     st.sidebar.error("Create a dataset first")
+    # else:
+    #     source_dir = st.sidebar.selectbox(
+    #     "Choose a folder", settings.EVALUATION_DICT.keys())
+        
+    #     source_path = str(settings.EVALUATION_DICT.get(source_dir))
+    #     source_vid = st.sidebar.selectbox(
+    #     "Choose a clip", settings.FINAL_DICT[source_dir].keys())
+        
+        
+    #     with open("videos/JunctionEvalDataset/"+source_dir+"/"+source_vid, 'rb') as video_file:
+    #         video_bytes = video_file.read()
+    #     if video_bytes:
+    #         st.video(video_bytes)
 
-def benchMarking(confidence: float, language:str):
+    #     threshold = st.sidebar.text_input(
+    #         "Enter a integer in range 1-5"
+    #     )
+
+    #     try:
+            
+    #         threshold = int(threshold)
+    #         if (threshold > 5 or threshold < 1):
+    #             st.sidebar.error("Enter a valid value")
+    #         else:
+    #             if st.sidebar.button("Start Evaluation"):
+    #                 returnVid = "videos/JunctionEvaluations/IndiraNagarClips/clip1.mp4"
+    #                 with open(returnVid, 'rb') as video_file2:
+    #                     video_bytes2 = video_file2.read()
+                        
+    #                 if video_bytes2:
+    #                     st.video(video_bytes2)
+                    
+                                                            
+    #     except:
+    #         st.sidebar.error("Enter a valid integer")'''            
+
+
+def benchMarking():
     source_vid = st.sidebar.selectbox(
-    COMPONENTS[language]["CHOOSE_VID"], settings.VIDEOS_DICT.keys())
-    
+    "Choose a video...", settings.VIDEOS_DICT.keys())
     source_path = str(settings.VIDEOS_DICT.get(source_vid))
     
-    traffic_data = st.sidebar.file_uploader(COMPONENTS[language]["TRAFFIC_DATA"], type=("csv"))
-    
-    time = st.sidebar.text_input(COMPONENTS[language]["ACCURACY_INTERVAL"])
-    choice = st.sidebar.radio(COMPONENTS[language]["BENCHMARKING_CRIT"], [COMPONENTS[language]["BENCHMARKING_FLOW"], COMPONENTS[language]["BENCHMARKING_QUEUE_LENGTH"]])
-    
-    new_path = source_path.split("\\")[-1]
-    
+    time = st.sidebar.text_input("Time Interval for Accuracy Analysis (in minutes):")
+    choice = st.sidebar.radio("Choose benchmarking criteria", ["Flow", "Queue Length"])
+    new_path = source_path.split("/")[-1]
     zones_IN_configuration_path = "configure/ZONES_IN"+new_path+".json"
     zones_OUT_configuration_path = "configure/ZONES_OUT"+new_path+".json"
     weight_path = "weights/yolov8n.pt"
-    
-    if(st.sidebar.button(COMPONENTS[language]["ZONES_IN"])):
+    if(st.sidebar.button("Draw Zones IN")):
         drawzones(source_path = source_path, zone_configuration_path = zones_IN_configuration_path)
-        st.sidebar.write("ZONES_IN "+COMPONENTS[language]["SUCCESS"]+zones_IN_configuration_path)
+        st.sidebar.write("ZONES_IN created successfully at "+zones_IN_configuration_path)
     
-    if(st.sidebar.button(COMPONENTS[language]["ZONES_OUT"])):    
+    if(st.sidebar.button("Draw Zones OUT")):    
         drawzones(source_path = source_path, zone_configuration_path = zones_OUT_configuration_path)
-        st.sidebar.write("ZONES_OUT "+COMPONENTS[language]["SUCCESS"]+zones_OUT_configuration_path)
+        st.sidebar.write("ZONES_OUT created successfully at "+zones_OUT_configuration_path)
+    if(st.sidebar.button("BenchMark")):
+            if(choice == "Flow"):
+                processor = VideoProcessor(
+                source_weights_path=weight_path,
+                source_video_path=source_path,
+                zoneIN_configuration_path=zones_IN_configuration_path,
+                zoneOUT_configuration_path=zones_OUT_configuration_path,  
+                time = float(time)  
+            )
+                processor.process_video()
+                
+            elif choice == "Queue Length":
+                BenchMarking(source_path=source_path, zones_IN_configuration_path=zones_IN_configuration_path, weight_path=weight_path)
+
+def BenchMarking(source_path, zones_IN_configuration_path, weight_path):
+    def initiate_annotators(
+    polygons: List[np.ndarray], resolution_wh: Tuple[int, int]
+) -> Tuple[
+    List[sv.PolygonZone], List[sv.PolygonZoneAnnotator], List[sv.BoundingBoxAnnotator]
+]:
+        line_thickness = sv.calculate_optimal_line_thickness(resolution_wh=resolution_wh)
+        text_scale = sv.calculate_optimal_text_scale(resolution_wh=resolution_wh)
+
+        zones = []
+        zone_annotators = []
+        box_annotators = []
+
+        for index, polygon in enumerate(polygons):
+            zone = sv.PolygonZone(polygon=polygon)
+            zone_annotator = sv.PolygonZoneAnnotator(
+                zone=zone,
+                color=COLORS.by_idx(index),
+                thickness=line_thickness,
+                text_thickness=line_thickness * 2,
+                text_scale=text_scale * 2,
+            )
+            box_annotator = sv.BoundingBoxAnnotator(
+                color=COLORS.by_idx(index), thickness=line_thickness
+            )
+            zones.append(zone)
+            zone_annotators.append(zone_annotator)
+            box_annotators.append(box_annotator)
+
+        return zones, zone_annotators, box_annotators
+
+    def detect(
+        frame: np.ndarray, model: YOLO, confidence_threshold: float = 0.5
+    ) -> sv.Detections:
+    
+        results = model(frame, imgsz=1280, verbose=False)[0]
+        detections = sv.Detections.from_ultralytics(results)
         
-    if(st.sidebar.button(COMPONENTS[language]["BENCHMARK"])):
+        return detections
+
+
+    def annotate(
+        frame: np.ndarray,
+        zones: List[sv.PolygonZone],
+        zone_annotators: List[sv.PolygonZoneAnnotator],
+        box_annotators: List[sv.BoundingBoxAnnotator],
+        detections: sv.Detections,
+    ) -> np.ndarray:
         
-            if traffic_data is not None:
-                df = pandas.read_csv(traffic_data)
-                if(choice == COMPONENTS[language]["BENCHMARKING_FLOW"]):
-                    analysis_path = "analysis\\accuracy\Flow Rate\data_flow_rate"+new_path+".csv"
-                    processor = VideoProcessor(
-                    source_weights_path=weight_path,
-                    source_video_path=source_path,
-                    zoneIN_configuration_path=zones_IN_configuration_path,
-                    zoneOUT_configuration_path=zones_OUT_configuration_path,  
-                    time = float(time),
-                    confidence_threshold=confidence,
-                    dataFrame = df,
-                    analysis_path = analysis_path
-                )
-                    processor.process_video()
-                elif COMPONENTS[language]["BENCHMARKING_QUEUE_LENGTH"]:
-                    analysis_path = "analysis\\accuracy\Queue Length\data_queuelength"+new_path+".csv"
-                    BenchMarking(source_path=source_path, zones_IN_configuration_path=zones_IN_configuration_path, weight_path=weight_path, dataFrame=df, time_analysis=float(time),confidence=confidence, language=language, analysis_path=analysis_path)
+        annotated_frame = frame.copy()
+        for zone, zone_annotator, box_annotator in zip(
+            zones, zone_annotators, box_annotators
+        ):
+            detections_in_zone = detections[zone.trigger(detections=detections)]
+            annotated_frame = zone_annotator.annotate(scene=annotated_frame)
+            annotated_frame = box_annotator.annotate(
+                scene=annotated_frame, detections=detections_in_zone
+            )
+        return annotated_frame
+
+    
+    video_info = sv.VideoInfo.from_video_path(source_path)
+    polygons = load_zones_config(zones_IN_configuration_path)
+    zones, zone_annotators, box_annotators = initiate_annotators(
+        polygons=polygons, resolution_wh=video_info.resolution_wh
+    )
+
+    model = YOLO(weight_path)
+    target = None
+    vid_cap = cv2.VideoCapture(source_path)
+    st_frame = st.empty()
+    while(vid_cap.isOpened()):
+        success = vid_cap.read()
+        st.subheader("ALERTS: ")
+        if success:
+            frames_generator = sv.get_video_frames_generator(source_path)
+            if  target is not None:
+                with sv.VideoSink(target, video_info) as sink:
+                    for frame in tqdm(frames_generator, total=video_info.total_frames):
+                        detections = detect(frame, model, 0.3)
+                        annotated_frame = annotate(
+                            frame=frame,
+                            zones=zones,
+                            zone_annotators=zone_annotators,
+                            box_annotators=box_annotators,
+                            detections=detections,
+                        )
+                        sink.write_frame(annotated_frame)
             else:
-                st.sidebar.warning(COMPONENTS[language]["TRAFFIC_DATA_NOT_UPLOADED"])
-                return
-            
+                for frame in tqdm(frames_generator, total=video_info.total_frames):
+                    detections = detect(frame, model, 0.3)
+                    annotated_frame = annotate(
+                        frame=frame,
+                        zones=zones,
+                        zone_annotators=zone_annotators,
+                        box_annotators=box_annotators,
+                        detections=detections,
+                    )
+                    st_frame.image(annotated_frame,
+                                caption='Detected Video',
+                                channels="BGR",
+                                use_column_width=True)
+                vid_cap.release
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
 
-
-
-def Analyze(language):
-    auth_token=st.sidebar.text_input("Auth Token",type="password", )
-    
-    auth_button = st.sidebar.button("LOG IN")
-    
-    if "login" not in st.session_state:
-        st.session_state["login"] = False
-    if(auth_button):
-        if(auth_token == settings.ENCRYPTION_KEY):
-            st.session_state["login"] = True 
-             
-        else:
-            st.session_state["login"] = False
-            st.sidebar.error("Invalid Auth Token!")
-    if st.session_state["login"]:
-        analysis_crit = st.selectbox("Analysis Criteria",
-            [COMPONENTS[language]["ACCURACY"],COMPONENTS[language]["ENCROACHMENT"],"Encryption"]
-        )
-        if(analysis_crit == COMPONENTS[language]["ACCURACY"]):
-            
-            parameter = st.radio("Choose Parameter",[COMPONENTS[language]["FLOW_HEADER"].split(":")[-2],"Queue Length"])
-            if parameter == COMPONENTS[language]["FLOW_HEADER"].split(":")[-2]:
-                files = st.selectbox("Select file for analysis",settings.FLOW_DICT.keys())
-                file_path = str(settings.FLOW_DICT.get(files))
-                
-                execute_1 = st.button("Begin Analyis")
-                if(execute_1):
-                    try:
-                        decrypt_it(file_path, key = auth_token)
-                    except: 
-                        df = pandas.read_csv(file_path, on_bad_lines='skip')
-                        st.write(df)
-                               
-            elif parameter == "Queue Length":
-                files = st.selectbox("Select file for analysis",settings.QUEUE_DICT.keys())
-                file_path = str(settings.QUEUE_DICT.get(files))
-    
-                execute_1 = st.button("Begin Analyis")
-                if(execute_1):
-                    try:
-                        decrypt_it(file_path, key = auth_token)
-                    except: 
-                        df = pandas.read_csv(file_path)
-                        st.write(df)
-                    #st.write(decrypt_it(file_path, key = auth_token))
-            
-        elif(analysis_crit == COMPONENTS[language]["ENCROACHMENT"]):
-            files = st.selectbox("Select file for analysis",settings.ENCROACHMENT_DICT.keys())
-            file_path = str(settings.ENCROACHMENT_DICT.get(files))
-                
-            execute_2 = st.button("Begin Analyis")
-            if(execute_2):
-                try:
-                    decrypt_it(file_path, key = auth_token) 
-                except:
-                    df = pandas.read_csv(file_path)
-                    st.write(df)
-                #st.write(decrypt_it(file_path, key = auth_token))
-        elif(analysis_crit == "Encryption"):
-            all = list(settings.ENCROACHMENT_DICT.keys())
-            all.extend(list(settings.FLOW_DICT.keys()))
-            all.extend(list(settings.QUEUE_DICT.keys()))
-            files = st.selectbox("Select file for analysis",all)
-            if files in settings.ENCROACHMENT_DICT.keys():
-                file_path = str(settings.ENCROACHMENT_DICT.get(files))
-            elif files in settings.FLOW_DICT.keys():
-                file_path = str(settings.FLOW_DICT.get(files))
-            else:
-                file_path = str(settings.QUEUE_DICT.get(files))
-            if(st.button("Encrypt")):    
-                encrypt_it(path_csv=file_path)
-                st.success("Encryption Successful!")
-            
-            
-            
-                
-        
+        cv2.destroyAllWindows()
