@@ -316,6 +316,8 @@ def Analyze(language):
                 if(execute_1):
                     try:
                         decrypt_it(file_path, key = auth_token)
+                        df = pandas.read_csv(file_path)
+                        st.write(df)
                     except: 
                         df = pandas.read_csv(file_path, on_bad_lines='skip')
                         st.write(df)
@@ -328,8 +330,12 @@ def Analyze(language):
                 if(execute_1):
                     try:
                         decrypt_it(file_path, key = auth_token)
+                        df = pandas.read_csv(file_path)
+                        df = df.drop_duplicates(subset=["Time"])
+                        st.write(df)
                     except: 
                         df = pandas.read_csv(file_path)
+                        df = df.drop_duplicates(subset=["Time"])
                         st.write(df)
                     #st.write(decrypt_it(file_path, key = auth_token))
             
@@ -340,7 +346,9 @@ def Analyze(language):
             execute_2 = st.button("Begin Analyis")
             if(execute_2):
                 try:
-                    decrypt_it(file_path, key = auth_token) 
+                    decrypt_it(file_path, key = auth_token)
+                    df = pandas.read_csv(file_path)
+                    st.write(df) 
                 except:
                     df = pandas.read_csv(file_path)
                     st.write(df)
