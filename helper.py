@@ -334,11 +334,11 @@ def Analyze(language):
                     try:
                         decrypt_it(file_path, key = auth_token)
                         df = pandas.read_csv(file_path)
-                        df = df.drop_duplicates()
+                        df = df.drop_duplicates(subset=["Time"])
                         st.write(df)
                     except: 
                         df = pandas.read_csv(file_path)
-                        df = df.drop_duplicates()
+                        df = df.drop_duplicates(subset=["Time"])
                         st.write(df)
                     #st.write(decrypt_it(file_path, key = auth_token))
             
