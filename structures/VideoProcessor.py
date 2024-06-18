@@ -14,7 +14,7 @@ import numpy as np
 from utils.general import load_zones_config
 from locales.settings_languages import COMPONENTS
 from collections import Counter
-from googletrans import Translator
+# from googletrans import Translator
 from structures.DetectionManager import DetectionsManager
 from structures.essentials import save_to_csv, decrypt_it, encrypt_it, make_headings
 import csv

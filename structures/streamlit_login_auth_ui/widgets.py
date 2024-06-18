@@ -1,7 +1,7 @@
 import streamlit as st
 import json
 import os
-from googletrans import Translator
+# from googletrans import Translator
 from streamlit_lottie import st_lottie
 from streamlit_option_menu import option_menu
 from streamlit_cookies_manager import EncryptedCookieManager
