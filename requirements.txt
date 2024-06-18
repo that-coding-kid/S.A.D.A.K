@@ -109,11 +109,11 @@ mypy-extensions==1.0.0
 nest-asyncio==1.6.0
 networkx==3.3
 numpy==1.25.2
-nvidia-cublas-cu12==12.4.5.8
-nvidia-cuda-cupti-cu12==12.4.127
-nvidia-cuda-nvrtc-cu12==12.4.127
-nvidia-cuda-runtime-cu12==12.4.127
-nvidia-cudnn-cu12==9.1.1.17
+nvidia-cublas-cu12
+nvidia-cuda-cupti-cu12
+nvidia-cuda-nvrtc-cu12
+nvidia-cuda-runtime-cu12
+nvidia-cudnn-cu12
 nvidia-cufft-cu12
 nvidia-curand-cu12
 nvidia-cusolver-cu12
