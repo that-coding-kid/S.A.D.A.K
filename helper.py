@@ -424,7 +424,7 @@ def junctionEvaluation(language):
             video_path = os.path.join(st.session_state.current_dir_path, video_file)
             first_frame = get_first_frame(video_path)
             if (idx < len(folders)):
-                first_frame = Image.open(IMAGES_DIR_PATH+"/folderIcon.png")
+                first_frame = Image.open(IMAGES_DIR_PATH+"/FolderIcon.png")
                 first_frame = first_frame.resize(CARD_IMAGE_SIZE, Image.LANCZOS)
                 st.image(first_frame, use_column_width=True)
                 st.write(video_file)
@@ -437,6 +437,7 @@ def junctionEvaluation(language):
                     st.image(first_frame, use_column_width=True)
                     st.write(video_file)
                     if st.button(f"Analyze {video_file}", key=video_file):
+
                         pass
         
     '''# if (len(settings.EVALUATION_DICT.keys()) == 0):
