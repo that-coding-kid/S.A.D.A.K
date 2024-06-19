@@ -1,18 +1,32 @@
-# Use a minimal Python 3.10 image for efficiency
-FROM python:3.10-slim
+FROM python:3.10.11
 
-# Optional: Set working directory (adjust if needed)
-WORKDIR /app
+# Expose port you want your app on
+EXPOSE 8080
 
-# Install dependencies from requirements.txt
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt
+# Upgrade pip and install requirements
+COPY requirements.txt requirements.txt
+RUN pip install -U pip
+RUN pip install -r requirements.txt
 
-# Copy your Streamlit application code
-COPY . .
+# Copy app code and set working directory
+COPY analysis analysis
+COPY structures structures
+COPY configure configure
+COPY images images
+COPY locales locales
+COPY scripts scripts
+COPY utils utils
 
-# Optional: Install streamlit_login_auth_ui if not in requirements.txt
-RUN pip3 install streamlit_login_auth_ui  # Uncomment if needed
+COPY weights weights
+COPY helper.py helper.py
+COPY app.py app.py
+COPY assets assets
+COPY settings.py settings.py
+COPY traffic_data.csv traffic_data.csv
 
-# Command to run your Streamlit app (replace with your actual command)
-CMD ["python3", "app.py"]
+
+
+WORKDIR ./
+
+# Run
+ENTRYPOINT [“streamlit”, “run”, “app.py”, “–server.port=8080”, “–server.address=0.0.0.0”]
