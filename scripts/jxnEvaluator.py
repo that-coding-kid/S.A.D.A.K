@@ -50,7 +50,6 @@ class BYTETrackerArgs:
     min_box_area: float = 1.0
     mot20: bool = False
 
-display.clear_output()
 print("supervision.__version__:", sv.__version__)
 
 #later yolo8x if possible
