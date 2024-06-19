@@ -6,7 +6,6 @@ import supervision as sv
 import pandas
 from tqdm import tqdm
 import settings
-
 import os
 from typing import Any, Optional, Tuple, Dict, Iterable, List, Set
 import shutil
@@ -22,6 +21,7 @@ from structures.encroachment import timedetect, livedetection
 from structures.benchmarking_queue import BenchMarking
 from PIL import Image
 from scripts.jxnEvaluator import *
+
 KEY_ENTER = 13
 KEY_NEWLINE = 10
 KEY_ESCAPE = 27

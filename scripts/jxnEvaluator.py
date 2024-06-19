@@ -20,7 +20,6 @@
 import numpy as np
 import supervision as sv
 import ultralytics
-import yolox
 import matplotlib.pyplot as plt
 import cv2
 import os
@@ -32,7 +31,6 @@ from supervision.detection.core import Detections
 from supervision.utils.video import VideoInfo
 from supervision.draw.color import ColorPalette
 from supervision.annotators.utils import ColorLookup
-from yolox.tracker.byte_tracker import BYTETracker, STrack
 from scipy.signal import resample
 from onemetric.cv.utils.iou import box_iou_batch
 from dataclasses import dataclass
@@ -42,7 +40,6 @@ from typing import Any,Optional
 import streamlit as st
 
 ultralytics.checks()
-print("yolox.__version__:", yolox.__version__)
 
 @dataclass(frozen=True)
 class BYTETrackerArgs:
