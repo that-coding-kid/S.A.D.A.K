@@ -1,32 +1,22 @@
-FROM python:3.10.11
+# Use a minimal Python 3.10 image for efficiency
+FROM python:3.10
 
-# Expose port you want your app on
-EXPOSE 8080
+# Optional: Set working directory (adjust if needed)
+WORKDIR /app
 
-# Upgrade pip and install requirements
-COPY requirements.txt requirements.txt
-RUN pip install -U pip
-RUN pip install -r requirements.txt
+# Install dependencies from requirements.txt
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
 
-# Copy app code and set working directory
-COPY analysis analysis
-COPY structures structures
-COPY configure configure
-COPY images images
-COPY locales locales
-COPY scripts scripts
-COPY utils utils
-
-COPY weights weights
-COPY helper.py helper.py
-COPY app.py app.py
-COPY assets assets
-COPY settings.py settings.py
-COPY traffic_data.csv traffic_data.csv
+RUN apt-get update && apt-get install -y libgl1-mesa-dev libx11-dev libxrender-dev
 
 
 
-WORKDIR ./
+# Copy your Streamlit application code
+COPY . .
 
-# Run
-ENTRYPOINT [“streamlit”, “run”, “app.py”, “–server.port=8080”, “–server.address=0.0.0.0”]
+# Optional: Install streamlit_login_auth_ui if not in requirements.txt
+RUN pip3 install streamlit_login_auth_ui  # Uncomment if needed
+
+# Command to run your Streamlit app (replace with your actual command)
+CMD ["streamlit","run", "app.py","--server.enableCORS", "false", "--browser.serverAddress", "0.0.0.0", "--browser.gatherUsageStats", "false", "--server.port", "8080"]
