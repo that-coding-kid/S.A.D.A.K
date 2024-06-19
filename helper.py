@@ -321,7 +321,9 @@ def Analyze(language):
                     except: 
                         df = pandas.read_csv(file_path, on_bad_lines='skip')
                         st.write(df)
-                               
+                    if(st.button("Visualize")):
+                        st.pyplot(df.plot())
+                                   
             elif parameter == "Queue Length":
                 files = st.selectbox("Select file for analysis",settings.QUEUE_DICT.keys())
                 file_path = str(settings.QUEUE_DICT.get(files))
@@ -337,6 +339,8 @@ def Analyze(language):
                         df = pandas.read_csv(file_path)
                         df = df.drop_duplicates(subset=["Time"])
                         st.write(df)
+                    if(st.button("Visualize")):
+                        st.pyplot(df.plot())
                     #st.write(decrypt_it(file_path, key = auth_token))
             
         elif(analysis_crit == COMPONENTS[language]["ENCROACHMENT"]):
@@ -352,6 +356,9 @@ def Analyze(language):
                 except:
                     df = pandas.read_csv(file_path)
                     st.write(df)
+                if(st.button("Visualize")):
+                    st.pyplot(df.plot())
+                    
                 #st.write(decrypt_it(file_path, key = auth_token))
         elif(analysis_crit == "Encryption"):
             all = list(settings.ENCROACHMENT_DICT.keys())
