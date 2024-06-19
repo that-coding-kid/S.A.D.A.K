@@ -228,6 +228,6 @@ websocket-client==1.8.0
 widgetsnbextension==4.0.2
 wincertstore==0.2
 yarl==1.9.4
-yolox==0.1.0
+yolox==0.2.0
 zipp==3.8.1
 zxing-cpp==2.2.0
