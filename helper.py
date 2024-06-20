@@ -162,7 +162,7 @@ def enchroachment(confidence: float, language: str):
             analysis_path = "analysis/encroachments/data_"+source_url+".csv"
             livedetection(source_url=source_url, violation_time=int(time), zone_configuration_path=zones_configuration_path,confidence=confidence, analysis_path=analysis_path)
         else:
-            new_path = source_path.split("/")[-1]
+            new_path = source_path.split("\\")[-1]
             zones_configuration_path = "configure/ZONES"+new_path+".json" 
             analysis_path = "analysis/encroachments/data_encroachment"+new_path+".csv"
             if(os.path.exists(zones_configuration_path)):
@@ -171,7 +171,7 @@ def enchroachment(confidence: float, language: str):
 
             else:
                 drawzones(source_path = source_path, zone_configuration_path = zones_configuration_path)
-                timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path, csv_list=csv_list)
+                timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path) #Removed csvList arguement
                 
 def junctionEvaluationDataset(language: str):
     source_vid = st.sidebar.selectbox(
@@ -249,7 +249,7 @@ def benchMarking(confidence: float, language:str):
     time = st.sidebar.text_input(COMPONENTS[language]["ACCURACY_INTERVAL"])
     choice = st.sidebar.radio(COMPONENTS[language]["BENCHMARKING_CRIT"], [COMPONENTS[language]["BENCHMARKING_FLOW"], COMPONENTS[language]["BENCHMARKING_QUEUE_LENGTH"]])
     
-    new_path = source_path.split("/")[-1]
+    new_path = source_path.split("\\")[-1]
     
     zones_IN_configuration_path = "configure/ZONES_IN"+new_path+".json"
     zones_OUT_configuration_path = "configure/ZONES_OUT"+new_path+".json"
@@ -405,9 +405,12 @@ def loadDetections(video_path):
             pass
 
     if not os.path.exists(detections_path):
-        return detections_path, False
+        return detections_path, False, []
     else:
-        return detections_path, True
+        f = open(detections_path,"rb")
+        detections = pickle.load(f)
+        f.close()
+        return detections_path, True, detections
 
 def junctionEvaluation(language):
     global CURRENT_DIR_PATH
@@ -416,57 +419,32 @@ def junctionEvaluation(language):
         st.session_state.current_dir_path = VIDEO_DIR_PATH
 
     st.text(st.session_state.current_dir_path)
-    if ("current_det_path" not in st.session_state):
-        st.session_state.current_det_path = DETECTIONS_DIR_PATH
+    if ("current_state" not in st.session_state):
+        st.session_state.current_state = "homePage"
 
-    isVideo = False
-    if (st.session_state.current_dir_path.endswith(('.mp4', '.avi','.mov'))):
-        isVideo = True
-    
-    if (isVideo):
-        col1, col2 = st.columns([3,1])
-        with col1:
-            st.title("Analysis: " + st.session_state.current_dir_path[st.session_state.current_dir_path.rfind("/")+1:])
-        with col2:
-            if (st.button("Back to video gallery")):
-                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind('/')+1]
-                st.rerun()
-        detections_path, exists = loadDetections(st.session_state.current_dir_path)
-        if (not exists):
-            st.subheader("Detections not found!")
-            if (st.button("Obtain and save detections")):
-                detections = get_detections(st.session_state.current_dir_path)
-                saveDetections(detections=detections,filename=detections_path)
-                pass
-        else:
-            st.subheader("Detections found!")
-            col1, col2 = st.columns([0.1, 0.3])
-            with col1:
-                st.button("Analyze whole junction")
-            with col2:
-                st.button("✨ Roadwise Analysisᴮᴱᵀᴬ")
 
-    else:
-        st.title("Video Gallery")
 
-    if (isVideo == False and st.session_state.current_dir_path!=VIDEO_DIR_PATH):
-        if (st.button("Back")):
-            st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")]
-            st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")+1]
+    if (st.session_state.current_state=="homePage"):
+        isVideo = False
+        if (st.session_state.current_dir_path.endswith(('.mp4', '.avi','.mov','.AVI'))):
+            isVideo = True
+            st.session_state.current_state = "checkingDetections"
             st.rerun()
+        else:
+            st.title("Video Gallery")
 
-
-    # Specify the directory containing videos
-
-    # Fetch query parameters
-
-    # Fetch all video files
-    if (not isVideo):
-        video_files = [f for f in os.listdir(st.session_state.current_dir_path) if f.endswith(('.mp4', '.avi','.mov'))]
+        video_files = [f for f in os.listdir(st.session_state.current_dir_path) if f.endswith(('.mp4', '.avi','.mov','.AVI'))]
         folders = [f for f in os.listdir(st.session_state.current_dir_path) if '.' not in f]
         # Display videos in a grid
         cols = st.columns(3)  # Adjust the number of columns as needed
         video_files = folders+video_files
+        
+        if (st.session_state.current_dir_path!=VIDEO_DIR_PATH):
+            if (st.button("Back")):
+                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")]
+                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")+1]
+                st.rerun()
+
         for idx, video_file in enumerate(video_files):
             with cols[idx % 3]:  # Change 3 to the number of columns you want
                 video_path = os.path.join(st.session_state.current_dir_path, video_file)
@@ -488,6 +466,86 @@ def junctionEvaluation(language):
                             st.session_state.current_dir_path = st.session_state.current_dir_path+video_file
                             st.rerun()
                             
+
+
+
+    if (st.session_state.current_state=="checkingDetections"):
+        col1, col2 = st.columns([3,1])
+        with col1:
+            st.title("Analysis: " + st.session_state.current_dir_path[st.session_state.current_dir_path.rfind("/")+1:])
+        with col2:
+            if (st.button("Back to video gallery")):
+                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind('/')+1]
+                st.session_state.current_state = "homePage"
+                st.rerun()
+        detections_path, exists, detections = loadDetections(st.session_state.current_dir_path)
+        if (not exists):
+            st.subheader("Detections not found!")
+            if (st.button("Obtain and save detections")):
+                detections = get_detections(st.session_state.current_dir_path)
+                saveDetections(detections=detections,filename=detections_path)
+                st.rerun()
+        else:
+            st.session_state.current_state = "DetectionsFound"
+            st.rerun()
+    
+    if (st.session_state.current_state == "DetectionsFound"):
+        st.subheader("Detections found!")
+        if (st.button("Back to video gallery")):
+            st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind('/')+1]
+            st.session_state.current_state = "homePage"
+            st.rerun()
+        col1, col2 = st.columns([1,1])
+        with col1:
+            if (st.button("Analyze whole junction")):
+                st.session_state.current_state = "analyzeWholeJxn" 
+                st.rerun()     
+        with col2:
+            if (st.button("✨ Roadwise Analysisᴮᴱᵀᴬ")): 
+                st.session_state.current_state = "roadwiseanalysis"
+                st.rerun()
+
+    if (st.session_state.current_state == "analyzeWholeJxn"):
+        if (st.button("Back to video gallery")):
+            st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind('/')+1]
+            st.session_state.current_state = "homePage"
+            st.rerun()
+        col1,col2 = st.columns([3,1])
+        with col1:
+            frameThreshold = st.slider("Frame Threshold",min_value=10,max_value=50,value=24)
+            if ("frameThreshold" not in st.session_state):
+                st.session_state.frameThreshold = frameThreshold
+        with col2:
+            if (st.button("Detect")):
+                st.session_state.current_state = "wholeJunction"
+                detections_path, exists, detections = loadDetections(st.session_state.current_dir_path)
+                finalDict = cleaningDataset(detections=detections,frameThreshold=st.session_state.frameThreshold)
+                st.session_state.finalDict = finalDict
+                st.session_state.current_state = "analysis"
+                st.rerun()    
+        st.subheader("Any vehicle detected in < frameThreshold frames would not be considered in final analysis")
+
+    if (st.session_state.current_state == "analysis"):
+        if (st.button("Back to video gallery")):
+            st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind('/')+1]
+            st.session_state.current_state = "homePage"
+            st.rerun()
+        table = calculateWholeJunction(st.session_state.finalDict)
+        newTable = {}
+        for i in table.keys():
+            newTable[model.model.names[i]] = table[i]
+            print(model.model.names[i])
+        print(newTable)
+        df = pandas.DataFrame.from_dict(newTable, orient='index', columns=['Value'])
+        st.title('Number of vehicles detected in given clip')
+        st.table(df)
+
+    # Specify the directory containing videos
+
+    # Fetch query parameters
+
+    # Fetch all video files
+
 
                             
 

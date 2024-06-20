@@ -161,6 +161,7 @@ def updateDirectories():
     for filename in os.listdir(VIDEO_DIR):
         f = os.path.join(VIDEO_DIR, filename)
         # checking if it is a file
+        print(filename)
         try:
             if(filename[-4:]==".mp4" or filename[-4:] == ".AVI"):
                 VIDEOS_DICT[filename] = f
