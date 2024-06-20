@@ -150,30 +150,92 @@ def play_rtsp_stream(conf, model, language):
             st.sidebar.error(COMPONENTS[language]["RTSP_ERROR"] + str(e))
 
 def enchroachment(confidence: float, language: str):
-    source_vid = st.sidebar.selectbox(
-    COMPONENTS[language]["CHOOSE_VID"], settings.VIDEOS_DICT.keys())
-    
-    source_path = str(settings.VIDEOS_DICT.get(source_vid))
-    csv_list = []
-    time = st.sidebar.text_input(COMPONENTS[language]["VIOLATION_TIME"])
-    
-    source_url = st.sidebar.text_input(COMPONENTS[language]["SOURCE_URL_RTSP"])
-    if st.sidebar.button(COMPONENTS[language]["BOTTLENECK_ERRORS"]):
-        if(source_url): 
-            zones_configuration_path = "configure/ZONESFootage_Feed_2.mp4.json"
-            analysis_path = "analysis/encroachments/data_"+source_url+".csv"
-            livedetection(source_url=source_url, violation_time=int(time), zone_configuration_path=zones_configuration_path,confidence=confidence, analysis_path=analysis_path)
-        else:
-            new_path = source_path.split("\\")[-1]
-            zones_configuration_path = "configure/ZONES"+new_path+".json" 
-            analysis_path = "analysis/encroachments/data_encroachment"+new_path+".csv"
-            if(os.path.exists(zones_configuration_path)):
-                timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path)
-                            
+    global CURRENT_DIR_PATH
 
+    if ("current_dir_path" not in st.session_state):
+        st.session_state.current_dir_path = VIDEO_DIR_PATH
+
+    st.text(st.session_state.current_dir_path)
+    if ("current_state" not in st.session_state):
+        st.session_state.current_state = "homePage"
+
+
+
+    if (st.session_state.current_state=="homePage"):
+        isVideo = False
+        if (st.session_state.current_dir_path.endswith(('.mp4', '.avi','.mov','.AVI'))):
+            isVideo = True
+            st.session_state.current_state = "Encroachment"
+            st.rerun()
+        else:
+            st.title("Video Gallery")
+        
+        
+        video_files = [f for f in os.listdir(st.session_state.current_dir_path) if f.endswith(('.mp4', '.avi','.mov','.AVI'))]
+        folders = [f for f in os.listdir(st.session_state.current_dir_path) if '.' not in f]
+        # Display videos in a grid
+        cols = st.columns(3)  # Adjust the number of columns as needed
+        video_files = folders+video_files
+        if (st.session_state.current_dir_path!=VIDEO_DIR_PATH):
+            if (st.button("Back")):
+                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")]
+                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")+1]
+                st.rerun()
+
+        for idx, video_file in enumerate(video_files):
+            with cols[idx % 3]:  # Change 3 to the number of columns you want
+                video_path = os.path.join(st.session_state.current_dir_path, video_file)
+                first_frame = get_first_frame(video_path)
+                if (idx < len(folders)):
+                    first_frame = Image.open(IMAGES_DIR_PATH+"/FolderIcon.png")
+                    first_frame = first_frame.resize(CARD_IMAGE_SIZE, Image.LANCZOS)
+                    st.image(first_frame, use_column_width=True)
+                    st.write(video_file)
+                    if st.button(f"Navigate to {video_file}", key=video_file):
+                        st.session_state.current_dir_path= st.session_state.current_dir_path+video_file+"/"
+                        st.rerun()
+                        
+                else:
+                    if first_frame:
+                        st.image(first_frame, use_column_width=True)
+                        st.write(video_file)
+                        if st.button(f"Detect Bottlenecks for {video_file}", key=video_file):
+                            st.session_state.current_dir_path = st.session_state.current_dir_path+video_file
+                            st.rerun()
+
+    if(st.session_state.current_state == "Encroachment"):                
+    #source_vid = st.sidebar.selectbox(
+    #COMPONENTS[language]["CHOOSE_VID"], settings.VIDEOS_DICT.keys())
+        
+        source_path = st.session_state.current_dir_path
+        col1, col2 = st.columns([3,1])
+        with col1:
+            st.title("Bottleneck Detection: " + st.session_state.current_dir_path[st.session_state.current_dir_path.rfind("/")+1:])
+        with col2:
+            if (st.button("Back to video gallery")):
+                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind('/')+1]
+                st.session_state.current_state = "homePage"
+                st.rerun()
+        time = st.text_input(COMPONENTS[language]["VIOLATION_TIME"], placeholder="Enter Violation Time")
+        
+        source_url = st.text_input(COMPONENTS[language]["SOURCE_URL_RTSP"], placeholder="Enter RTSP URL:")
+        if st.button(COMPONENTS[language]["BOTTLENECK_ERRORS"]):
+            if(source_url): 
+                zones_configuration_path = "configure/ZONESFootage_Feed_6.mp4.json"
+                analysis_path = "analysis/encroachments/data_"+source_url+".csv"
+                livedetection(source_url=source_url, violation_time=int(time), zone_configuration_path=zones_configuration_path,confidence=confidence, analysis_path=analysis_path)
             else:
-                drawzones(source_path = source_path, zone_configuration_path = zones_configuration_path)
-                timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path) #Removed csvList arguement
+                new_path = source_path.split("/")[-1]
+                zones_configuration_path = "configure/ZONES"+new_path+".json" 
+                
+                analysis_path = "analysis/encroachments/data_encroachment"+new_path+".csv"
+                if(os.path.exists(zones_configuration_path)):
+                    timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path)
+                                
+
+                else:
+                    drawzones(source_path = source_path, zone_configuration_path = zones_configuration_path)
+                    timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path) #Removed csvList arguement
                 
 def junctionEvaluationDataset(language: str):
     source_vid = st.sidebar.selectbox(
