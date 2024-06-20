@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: t4-pod
+spec:
+  nodeSelector:
+    cloud.google.com/compute-class: "Accelerator"
+    cloud.google.com/gke-accelerator: "nvidia-tesla-t4"
+  containers:
+  - image: asia-south2-docker.pkg.dev/kspsaad/cloud-run-source-deploy/s.a.d.a.k/kspsangya@sha256:7c956ccfa1bb5ffedba5314cca3efd722a3a7e0b6f00a97d3863b26abf97d8d1
+        imagePullPolicy: IfNotPresent
+        name: kspsangya-sha256-1
+    command: ["/bin/bash", "-c", "--"]
+    args: ["while true; do sleep 600; done;"]
+    resources:
+      limits:
+        nvidia.com/gpu: 4
+        cpu: "2Gi"
+        memory: "20Gi"
+      requests:
+        cpu: "2Gi"
+        memory: "20Gi"
