@@ -187,7 +187,7 @@ stack-data==0.6.3
 starlette==0.37.2
 streamlit==1.32.2
 streamlit-cookies-manager==0.2.0
-streamlit-login-auth-ui==0.2.0
+
 streamlit-lottie==0.0.5
 streamlit-option-menu==0.3.13
 structlog==24.1.0
@@ -227,3 +227,4 @@ wincertstore==0.2
 yarl==1.9.4
 zipp==3.8.1
 zxing-cpp==2.2.0
+plotly

@@ -21,6 +21,8 @@ from structures.encroachment import timedetect, livedetection
 from structures.benchmarking_queue import BenchMarking
 from PIL import Image
 from scripts.jxnEvaluator import *
+import plotly.express as px
+import plotly.figure_factory as ff
 
 KEY_ENTER = 13
 KEY_NEWLINE = 10
@@ -288,27 +290,56 @@ def benchMarking(confidence: float, language:str):
                 return
             
 def Analyze(language):
-    auth_token=st.sidebar.text_input("Auth Token",type="password", )
+    global showGraph
+    if "authorize" not in st.session_state:
+        st.session_state.authorize = "LogOut"
+    if "current" not in st.session_state:
+        st.session_state.current = "Home"
     
-    auth_button = st.sidebar.button("LOG IN")
-    
-    if "login" not in st.session_state:
-        st.session_state["login"] = False
-    if(auth_button):
-        if(auth_token == settings.ENCRYPTION_KEY):
-            st.session_state["login"] = True 
-             
-        else:
-            st.session_state["login"] = False
-            st.sidebar.error("Invalid Auth Token!")
-    if st.session_state["login"]:
+    if st.session_state.current == "Home":
+        st.header("Welcome To Analysis")
+        st.subheader("Authorization: ")
+        auth_token=st.text_input("Auth Token",type="password", placeholder="Enter Your authorization token")
+        auth_button = st.button("LOG IN")
+        if(auth_button):
+            if(auth_token == settings.ENCRYPTION_KEY):
+                st.session_state.current = "Login" 
+                st.session_state.authorize = "Login"
+                st.rerun()
+            else:
+                st.session_state.current = "Home"
+                st.sidebar.error("Invalid Auth Token!")
+                st.rerun()
+                
+    if st.session_state.authorize == "Login":
+        
+        logout = st.sidebar.button("Log Out")
+        if(logout):
+            st.session_state.current = "Home"
+            st.session_state.authorize = "LogOut"
+            st.success("Logged Out")
+            st.rerun()
+     
         analysis_crit = st.selectbox("Analysis Criteria",
             [COMPONENTS[language]["ACCURACY"],COMPONENTS[language]["ENCROACHMENT"],"Encryption"]
         )
-        if(analysis_crit == COMPONENTS[language]["ACCURACY"]):
+        
+        st.session_state.current = analysis_crit
+        
+    if(st.session_state.current!="Encryptions" and st.session_state.authorize == "Login"):
+
+        visualize = st.button("Visualize")
+        if(visualize):
+            st.session_state.current = "Visualize"
+        
+        if(st.session_state.current == COMPONENTS[language]["ACCURACY"]):
             
+            if("parameter" not in st.session_state):
+                st.session_state.parameter = "Queue Length" 
             parameter = st.radio("Choose Parameter",[COMPONENTS[language]["FLOW_HEADER"].split(":")[-2],"Queue Length"])
-            if parameter == COMPONENTS[language]["FLOW_HEADER"].split(":")[-2]:
+            st.session_state.parameter = parameter
+            
+            if st.session_state.parameter == COMPONENTS[language]["FLOW_HEADER"].split(":")[-2]:
                 files = st.selectbox("Select file for analysis",settings.FLOW_DICT.keys())
                 file_path = str(settings.FLOW_DICT.get(files))
                 
@@ -321,10 +352,13 @@ def Analyze(language):
                     except: 
                         df = pandas.read_csv(file_path, on_bad_lines='skip')
                         st.write(df)
-                    if(st.button("Visualize")):
-                        st.pyplot(df.plot())
-                                   
-            elif parameter == "Queue Length":
+                    if(showGraph):
+                        fig = px.scatter(df, x="Time", y=list(df.columns)[1:], width = 800, height = 400)
+                        fig.update_layout(showlegend = False)
+                        st.plotly_chart(fig)
+                        showGraph = False
+             
+            if st.session_state.parameter == "Queue Length":
                 files = st.selectbox("Select file for analysis",settings.QUEUE_DICT.keys())
                 file_path = str(settings.QUEUE_DICT.get(files))
     
@@ -339,11 +373,15 @@ def Analyze(language):
                         df = pandas.read_csv(file_path)
                         df = df.drop_duplicates(subset=["Time"])
                         st.write(df)
-                    if(st.button("Visualize")):
-                        st.pyplot(df.plot())
+                    if(showGraph):
+                        fig = px.scatter(df, x="Time", y=list(df.columns)[1:], width = 800, height = 400)
+                        fig.update_layout(showlegend = False)
+                        st.plotly_chart(fig)
+                        showGraph = False
+                    
                     #st.write(decrypt_it(file_path, key = auth_token))
             
-        elif(analysis_crit == COMPONENTS[language]["ENCROACHMENT"]):
+        if(st.session_state.current == COMPONENTS[language]["ENCROACHMENT"]):
             files = st.selectbox("Select file for analysis",settings.ENCROACHMENT_DICT.keys())
             file_path = str(settings.ENCROACHMENT_DICT.get(files))
                 
@@ -356,24 +394,50 @@ def Analyze(language):
                 except:
                     df = pandas.read_csv(file_path)
                     st.write(df)
-                if(st.button("Visualize")):
-                    st.pyplot(df.plot())
+                if(showGraph):
+                    st.subheader("Tracker Id Vs. Location")
+                    
+                    fig = px.scatter(df, x="Tracker_ID", y="Location", color ="Class")
+                    
+                    #st.plotly_chart(ff.createdf.plot(kind="scatter", x="Class", y="Location", ax=ax))
+                    #plt.savefig("Image_Plot1")
+                    #plot_frame = st.empty()
+                    #plot_frame.image("Image_Plot1.png")
+                    st.plotly_chart(fig)
+                    st.subheader("Tracer Id Vs. Class")
+                    fig = px.scatter(df, x = "Tracker_ID", y="Class", color = "Location")
+                    st.plotly_chart(fig, theme=None)
+                    showGraph = False
+        
+            
+        
+        if(st.session_state.current == "Visualize"):
+            showGraph = True
+            
+            st.session_state.current = analysis_crit
+            st.rerun()
+            
+        
+        
+            
+            
                     
                 #st.write(decrypt_it(file_path, key = auth_token))
-        elif(analysis_crit == "Encryption"):
-            all = list(settings.ENCROACHMENT_DICT.keys())
-            all.extend(list(settings.FLOW_DICT.keys()))
-            all.extend(list(settings.QUEUE_DICT.keys()))
-            files = st.selectbox("Select file for analysis",all)
-            if files in settings.ENCROACHMENT_DICT.keys():
-                file_path = str(settings.ENCROACHMENT_DICT.get(files))
-            elif files in settings.FLOW_DICT.keys():
-                file_path = str(settings.FLOW_DICT.get(files))
-            else:
-                file_path = str(settings.QUEUE_DICT.get(files))
-            if(st.button("Encrypt")):    
-                encrypt_it(path_csv=file_path)
-                st.success("Encryption Successful!")
+    if(st.session_state.current == "Encryption"):
+        
+        all = list(settings.ENCROACHMENT_DICT.keys())
+        all.extend(list(settings.FLOW_DICT.keys()))
+        all.extend(list(settings.QUEUE_DICT.keys()))
+        files = st.selectbox("Select file for analysis",all)
+        if files in settings.ENCROACHMENT_DICT.keys():
+            file_path = str(settings.ENCROACHMENT_DICT.get(files))
+        elif files in settings.FLOW_DICT.keys():
+            file_path = str(settings.FLOW_DICT.get(files))
+        else:
+            file_path = str(settings.QUEUE_DICT.get(files))
+        if(st.button("Encrypt")):    
+            encrypt_it(path_csv=file_path)
+            st.success("Encryption Successful!")
    
 def get_first_frame(video_path, size=CARD_IMAGE_SIZE):
     """Extract the first frame from a video file and resize it to the given size."""

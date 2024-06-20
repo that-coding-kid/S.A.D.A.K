@@ -45,7 +45,7 @@ def timedetect(source_path, zone_configuration_path, violation_time, confidence,
     LABEL_ANNOTATOR = sv.LabelAnnotator(
     color=COLORS, text_color=sv.Color.from_hex("#000000")
     )
-    terminate = st.sidebar.button("Terminate Stream")
+    
     csv_list =[]
     alert_dicts = {}
     time_in_seconds = False
@@ -75,107 +75,106 @@ def timedetect(source_path, zone_configuration_path, violation_time, confidence,
 
     vid_cap = cv2.VideoCapture(source_path)
     st_frame = st.empty()
+    
     while(vid_cap.isOpened()):
-            success = vid_cap.read()
-            st.subheader(COMPONENTS[language]["ALERTS"])
-            if success:
-                    for frame in frames_generator:
-                        results = model.infer(frame, confidence=confidence, iou_threshold=iou)[0]
-                        detections = sv.Detections.from_inference(results)
-                        detections = detections[find_in_list(detections.class_id, classes)]
-                        detections = tracker.update_with_detections(detections)
+         
+                success = vid_cap.read()
+                st.subheader(COMPONENTS[language]["ALERTS"])
+                if success:
+                        for frame in frames_generator:
+                            results = model.infer(frame, confidence=confidence, iou_threshold=iou)[0]
+                            detections = sv.Detections.from_inference(results)
+                            detections = detections[find_in_list(detections.class_id, classes)]
+                            detections = tracker.update_with_detections(detections)
 
-                        annotated_frame = frame.copy()
-
-                        for idx, zone in enumerate(zones):
-                            annotated_frame = sv.draw_polygon(
-                                scene=annotated_frame, polygon=zone.polygon, color=COLORS.by_idx(idx)
-                            )
-
-                            detections_in_zone = detections[zone.trigger(detections)]
-                            time_in_zone = timers[idx].tick(detections_in_zone)
-                            custom_color_lookup = np.full(detections_in_zone.class_id.shape, idx)
-
-                            annotated_frame = COLOR_ANNOTATOR.annotate(
-                                scene=annotated_frame,
-                                detections=detections_in_zone,
-                                custom_color_lookup=custom_color_lookup,
-                            )
-                            labels = [
-                                f"#{tracker_id} {int(time // 60):02d}:{int(time % 60):02d}"
-                                for tracker_id, time in zip(detections_in_zone.tracker_id, time_in_zone)     
-                            ]
-
-                            annotated_frame = LABEL_ANNOTATOR.annotate(
-                                scene=annotated_frame,
-                                detections=detections_in_zone,
-                                labels=labels,
-                                custom_color_lookup=custom_color_lookup,
-                            )
+                            annotated_frame = frame.copy()
                             
-                            for tracker_ID, time, cl in zip(detections_in_zone.tracker_id, time_in_zone, detections_in_zone.class_id):
-                                if tracker_ID not in displayed:
-                                    if(time_in_minutes):
-                                        if(time//60 >= float(violation_time)):
-                                            done_once = False
-                                            violations.append(tracker_ID)
-                                            cla = settings.CLASSES[cl]
-                                            alert_dicts["Tracker_ID"] = str(tracker_ID)
-                                            alert_dicts["Class"] = cla
-                                            alert_dicts["Location"] = idx
-                                            s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: "+str(idx)
-                                            st.warning(s, icon= "⚠️")
-                                            displayed[tracker_ID] = 1
-                                            if(alert_dicts not in csv_list):                                            
-                                                csv_list.append(alert_dicts)
-                                            if(not headings_made):
-                                                make_headings(analysis_path,csv_list)
-                                                save_to_csv(analysis_path,csv_list)
-                                                headings_made = True
-                                            else:
-                                                if(not done_once):
+
+                            for idx, zone in enumerate(zones):
+                                annotated_frame = sv.draw_polygon(
+                                    scene=annotated_frame, polygon=zone.polygon, color=COLORS.by_idx(idx)
+                                )
+
+                                detections_in_zone = detections[zone.trigger(detections)]
+                                time_in_zone = timers[idx].tick(detections_in_zone)
+                                custom_color_lookup = np.full(detections_in_zone.class_id.shape, idx)
+
+                                annotated_frame = COLOR_ANNOTATOR.annotate(
+                                    scene=annotated_frame,
+                                    detections=detections_in_zone,
+                                    custom_color_lookup=custom_color_lookup,
+                                )
+                                labels = [
+                                    f"#{tracker_id} {int(time // 60):02d}:{int(time % 60):02d}"
+                                    for tracker_id, time in zip(detections_in_zone.tracker_id, time_in_zone)     
+                                ]
+
+                                annotated_frame = LABEL_ANNOTATOR.annotate(
+                                    scene=annotated_frame,
+                                    detections=detections_in_zone,
+                                    labels=labels,
+                                    custom_color_lookup=custom_color_lookup,
+                                )
+                                
+                                for tracker_ID, time, cl in zip(detections_in_zone.tracker_id, time_in_zone, detections_in_zone.class_id):
+                                    if tracker_ID not in displayed:
+                                        if(time_in_minutes):
+                                            if(time//60 >= float(violation_time)):
+                                                done_once = False
+                                                violations.append(tracker_ID)
+                                                cla = settings.CLASSES[cl]
+                                                alert_dicts["Tracker_ID"] = str(tracker_ID)
+                                                alert_dicts["Class"] = cla
+                                                alert_dicts["Location"] = idx
+                                                s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: "+str(idx)
+                                                st.warning(s, icon= "⚠️")
+                                                displayed[tracker_ID] = 1
+                                                if(alert_dicts not in csv_list):                                            
+                                                    csv_list.append(alert_dicts)
+                                                if(not headings_made):
+                                                    make_headings(analysis_path,csv_list)
                                                     save_to_csv(analysis_path,csv_list)
-                                                    drop(analysis_path,csv_list)
-                                                    #encrypt_it(analysis_path)
-                                                    done_once = True
-                                                    continue
+                                                    headings_made = True
+                                                else:
+                                                    if(not done_once):
+                                                        save_to_csv(analysis_path,csv_list)
+                                                        drop(analysis_path,csv_list)
+                                                        #encrypt_it(analysis_path)
+                                                        done_once = True
+                                                        continue
+                                                    
                                                 
-                                            
-                                    if(time_in_seconds):
-                                        if(time%60 >= float(violation_time*60)):
-                                            violations.append(tracker_ID)
-                                            done_once = False
-                                            cla = settings.CLASSES[cl]
-                                            alert_dicts["Tracker_ID"] = str(tracker_ID)
-                                            alert_dicts["Class"] = cla
-                                            alert_dicts["Location"] = str(idx)
-                                            s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: "+str(idx)
-                                            st.warning(s, icon= "⚠️")
-                                            displayed[tracker_ID] = 1  
-                                            if(alert_dicts not in csv_list):                                          
-                                                csv_list.append(alert_dicts)
-                                            
-                                            if(not headings_made):
-                                                make_headings(analysis_path,csv_list)
-                                                save_to_csv(analysis_path,csv_list)
-                                                headings_made = True
-                                            else:
-                                                if(not done_once):
+                                        if(time_in_seconds):
+                                            if(time%60 >= float(violation_time*60)):
+                                                violations.append(tracker_ID)
+                                                done_once = False
+                                                cla = settings.CLASSES[cl]
+                                                alert_dicts["Tracker_ID"] = str(tracker_ID)
+                                                alert_dicts["Class"] = cla
+                                                alert_dicts["Location"] = str(idx)
+                                                s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: "+str(idx)
+                                                st.warning(s, icon= "⚠️")
+                                                displayed[tracker_ID] = 1  
+                                                if(alert_dicts not in csv_list):                                          
+                                                    csv_list.append(alert_dicts)
+                                                
+                                                if(not headings_made):
+                                                    make_headings(analysis_path,csv_list)
                                                     save_to_csv(analysis_path,csv_list)
-                                                    #encrypt_it(analysis_path)
-                                                    done_once = True
-                                                    continue
+                                                    headings_made = True
+                                                else:
+                                                    if(not done_once):
+                                                        save_to_csv(analysis_path,csv_list)
+                                                        #encrypt_it(analysis_path)
+                                                        done_once = True
+                                                        continue
 
 
-                        st_frame.image(annotated_frame,
-                                   caption='Detected Video',
-                                   channels="BGR",
-                                   use_column_width=True)
-                        if(terminate):
-                            return
-                    
-            if terminate:
-                return
+                            st_frame.image(annotated_frame,
+                                    caption='Detected Video',
+                                    channels="BGR",
+                                    use_column_width=True)
+
                 
 
 
