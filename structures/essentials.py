@@ -14,8 +14,9 @@ import settings
 from cryptography.fernet import Fernet
 from locales.settings_languages import COMPONENTS
 import pandas
+from PIL import Image
 
-
+CARD_IMAGE_SIZE = (300, int(300*0.5625))
 KEY_ENTER = 13
 KEY_NEWLINE = 10
 KEY_ESCAPE = 27
@@ -36,6 +37,18 @@ LABEL_ANNOTATOR = sv.LabelAnnotator(
 )
 current_mouse_position: Optional[Tuple[int, int]] = None
 
+
+def get_first_frame(video_path, size=CARD_IMAGE_SIZE):
+    """Extract the first frame from a video file and resize it to the given size."""
+    vidcap = cv2.VideoCapture(video_path)
+    success, image = vidcap.read()
+    if success:
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(image)
+        pil_image = pil_image.resize(size, Image.LANCZOS)
+        return pil_image
+    else:
+        return None
 
 def drawzones(source_path, zone_configuration_path):
     

@@ -16,7 +16,7 @@ from locales.settings_languages import COMPONENTS
 from scripts.jxnEvalDataCreation import mainFunc
 from structures.VideoProcessor import VideoProcessor
 from structures.essentials import drawzones, decrypt_it, encrypt_it
-from structures.essentials import display_tracker_options, _display_detected_frames, load_model
+from structures.essentials import display_tracker_options, _display_detected_frames, load_model, get_first_frame
 from structures.encroachment import timedetect, livedetection
 from structures.benchmarking_queue import BenchMarking
 from PIL import Image
@@ -303,53 +303,128 @@ def junctionEvaluationDataset(language: str):
 #             st.sidebar.error(COMPONENTS[language]["VALID_VALUE"])            
 
 def benchMarking(confidence: float, language:str):
-    source_vid = st.sidebar.selectbox(
-    COMPONENTS[language]["CHOOSE_VID"], settings.VIDEOS_DICT.keys())
     
-    source_path = str(settings.VIDEOS_DICT.get(source_vid))
-    
-    traffic_data = st.sidebar.file_uploader(COMPONENTS[language]["TRAFFIC_DATA"], type=("csv"))
-    
-    time = st.sidebar.text_input(COMPONENTS[language]["ACCURACY_INTERVAL"])
-    choice = st.sidebar.radio(COMPONENTS[language]["BENCHMARKING_CRIT"], [COMPONENTS[language]["BENCHMARKING_FLOW"], COMPONENTS[language]["BENCHMARKING_QUEUE_LENGTH"]])
-    
-    new_path = source_path.split("\\")[-1]
-    
-    zones_IN_configuration_path = "configure/ZONES_IN"+new_path+".json"
-    zones_OUT_configuration_path = "configure/ZONES_OUT"+new_path+".json"
-    weight_path = "weights/yolov8n.pt"
-    
-    if(st.sidebar.button(COMPONENTS[language]["ZONES_IN"])):
-        drawzones(source_path = source_path, zone_configuration_path = zones_IN_configuration_path)
-        st.sidebar.write("ZONES_IN "+COMPONENTS[language]["SUCCESS"]+zones_IN_configuration_path)
-    
-    if(st.sidebar.button(COMPONENTS[language]["ZONES_OUT"])):    
-        drawzones(source_path = source_path, zone_configuration_path = zones_OUT_configuration_path)
-        st.sidebar.write("ZONES_OUT "+COMPONENTS[language]["SUCCESS"]+zones_OUT_configuration_path)
+    global CURRENT_DIR_PATH
+
+    if ("current_dir_path" not in st.session_state):
+        st.session_state.current_dir_path = VIDEO_DIR_PATH
+
+    st.text(st.session_state.current_dir_path)
+    if ("current_state" not in st.session_state):
+        st.session_state.current_state = "homePage"
+
+
+
+    if (st.session_state.current_state=="homePage"):
+        isVideo = False
+        if (st.session_state.current_dir_path.endswith(('.mp4', '.avi','.mov','.AVI'))):
+            isVideo = True
+            st.session_state.current_state = "Benchmarking"
+            st.rerun()
+        else:
+            st.title("Video Gallery")
         
-    if(st.sidebar.button(COMPONENTS[language]["BENCHMARK"])):
         
-            if traffic_data is not None:
-                df = pandas.read_csv(traffic_data)
-                if(choice == COMPONENTS[language]["BENCHMARKING_FLOW"]):
-                    analysis_path = "analysis/accuracy/Flow Rate/data_flow_rate"+new_path+".csv"
-                    processor = VideoProcessor(
-                    source_weights_path=weight_path,
-                    source_video_path=source_path,
-                    zoneIN_configuration_path=zones_IN_configuration_path,
-                    zoneOUT_configuration_path=zones_OUT_configuration_path,  
-                    time = float(time),
-                    confidence_threshold=confidence,
-                    dataFrame = df,
-                    analysis_path = analysis_path
-                )
-                    processor.process_video()
-                elif COMPONENTS[language]["BENCHMARKING_QUEUE_LENGTH"]:
-                    analysis_path = "analysis/accuracy/Queue Length/data_queuelength"+new_path+".csv"
-                    BenchMarking(source_path=source_path, zones_IN_configuration_path=zones_IN_configuration_path, weight_path=weight_path, dataFrame=df, time_analysis=float(time),confidence=confidence, language=language, analysis_path=analysis_path)
-            else:
-                st.sidebar.warning(COMPONENTS[language]["TRAFFIC_DATA_NOT_UPLOADED"])
-                return
+        video_files = [f for f in os.listdir(st.session_state.current_dir_path) if f.endswith(('.mp4', '.avi','.mov','.AVI'))]
+        folders = [f for f in os.listdir(st.session_state.current_dir_path) if '.' not in f]
+        # Display videos in a grid
+        cols = st.columns(3)  # Adjust the number of columns as needed
+        video_files = folders+video_files
+        if (st.session_state.current_dir_path!=VIDEO_DIR_PATH):
+            if (st.button("Back")):
+                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")]
+                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind("/")+1]
+                st.rerun()
+
+        for idx, video_file in enumerate(video_files):
+            with cols[idx % 3]:  # Change 3 to the number of columns you want
+                video_path = os.path.join(st.session_state.current_dir_path, video_file)
+                first_frame = get_first_frame(video_path)
+                if (idx < len(folders)):
+                    first_frame = Image.open(IMAGES_DIR_PATH+"/FolderIcon.png")
+                    first_frame = first_frame.resize(CARD_IMAGE_SIZE, Image.LANCZOS)
+                    st.image(first_frame, use_column_width=True)
+                    st.write(video_file)
+                    if st.button(f"Navigate to {video_file}", key=video_file):
+                        st.session_state.current_dir_path= st.session_state.current_dir_path+video_file+"/"
+                        st.rerun()
+                        
+                else:
+                    if first_frame:
+                        st.image(first_frame, use_column_width=True)
+                        st.write(video_file)
+                        if st.button(f"Benchmark {video_file}", key=video_file):
+                            st.session_state.current_dir_path = st.session_state.current_dir_path+video_file
+                            st.rerun()
+    
+    if(st.session_state.current_state == "Benchmarking"):
+    
+        #source_vid = st.sidebar.selectbox(
+        #COMPONENTS[language]["CHOOSE_VID"], settings.VIDEOS_DICT.keys())
+        
+        
+        col1, col2 = st.columns([3,1])
+        with col1:
+            st.title("Benchmark: " + st.session_state.current_dir_path[st.session_state.current_dir_path.rfind("/")+1:])
+        with col2:
+            if (st.button("Back to video gallery")):
+                st.session_state.current_dir_path = st.session_state.current_dir_path[:st.session_state.current_dir_path.rfind('/')+1]
+                st.session_state.current_state = "homePage"
+                st.rerun()
+        
+        source_path = st.session_state.current_dir_path
+        traffic_data = st.file_uploader(COMPONENTS[language]["TRAFFIC_DATA"], type=("csv"))
+        
+        time = st.text_input(COMPONENTS[language]["ACCURACY_INTERVAL"])
+        choice = st.radio(COMPONENTS[language]["BENCHMARKING_CRIT"], [COMPONENTS[language]["BENCHMARKING_FLOW"], COMPONENTS[language]["BENCHMARKING_QUEUE_LENGTH"]])
+        
+        new_path = source_path.split("/")[-1]
+        
+        zones_IN_configuration_path = "configure/ZONES_IN"+new_path+".json"
+        zones_OUT_configuration_path = "configure/ZONES_OUT"+new_path+".json"
+        weight_path = "weights/yolov8n.pt"
+        col1, col2, col3 = st.columns(3)
+        
+        with col3:
+            button1 = st.button(COMPONENTS[language]["ZONES_IN"])
+
+        with col2:
+            button2 = st.button(COMPONENTS[language]["ZONES_OUT"])
+
+        with col1:
+            button3 = st.button(COMPONENTS[language]["BENCHMARK"])
+        
+        if(button1):
+            drawzones(source_path = source_path, zone_configuration_path = zones_IN_configuration_path)
+            st.sidebar.write("ZONES_IN "+COMPONENTS[language]["SUCCESS"]+zones_IN_configuration_path)
+        
+        if(button2):    
+            drawzones(source_path = source_path, zone_configuration_path = zones_OUT_configuration_path)
+            st.sidebar.write("ZONES_OUT "+COMPONENTS[language]["SUCCESS"]+zones_OUT_configuration_path)
+            
+        if(button3):
+            
+                if traffic_data is not None:
+                    df = pandas.read_csv(traffic_data)
+                    if(choice == COMPONENTS[language]["BENCHMARKING_FLOW"]):
+                        analysis_path = "analysis\\accuracy\Flow Rate\data_flow_rate"+new_path+".csv"
+                        processor = VideoProcessor(
+                        source_weights_path=weight_path,
+                        source_video_path=source_path,
+                        zoneIN_configuration_path=zones_IN_configuration_path,
+                        zoneOUT_configuration_path=zones_OUT_configuration_path,  
+                        time = float(time),
+                        confidence_threshold=confidence,
+                        dataFrame = df,
+                        analysis_path = analysis_path
+                    )
+                        processor.process_video()
+                    elif COMPONENTS[language]["BENCHMARKING_QUEUE_LENGTH"]:
+                        analysis_path = "analysis\\accuracy\Queue Length\data_queuelength"+new_path+".csv"
+                        BenchMarking(source_path=source_path, zones_IN_configuration_path=zones_IN_configuration_path, weight_path=weight_path, dataFrame=df, time_analysis=float(time),confidence=confidence, language=language, analysis_path=analysis_path)
+                else:
+                    st.sidebar.warning(COMPONENTS[language]["TRAFFIC_DATA_NOT_UPLOADED"])
+                    return
             
 def Analyze(language):
     global showGraph
