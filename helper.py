@@ -235,8 +235,8 @@ def enchroachment(confidence: float, language: str):
 
                 else:
                     drawzones(source_path = source_path, zone_configuration_path = zones_configuration_path)
-                    timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path) #Removed csvList arguement
-                
+                    timedetect(source_path = source_path, zone_configuration_path = zones_configuration_path, violation_time=float(time), confidence=confidence, language=language, analysis_path=analysis_path) #Removed csvList arguement 
+                                   
 def junctionEvaluationDataset(language: str):
     source_vid = st.sidebar.selectbox(
     COMPONENTS[language]["CHOOSE_VID"], settings.VIDEOS_DICT.keys())
