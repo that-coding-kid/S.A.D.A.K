@@ -162,6 +162,7 @@ def enchroachment(confidence: float, language: str):
 
 
     if (st.session_state.current_state=="homePage"):
+        st.header("Welcome to Bottleneck Detection")
         isVideo = False
         if (st.session_state.current_dir_path.endswith(('.mp4', '.avi','.mov','.AVI'))):
             isVideo = True
@@ -316,6 +317,7 @@ def benchMarking(confidence: float, language:str):
 
 
     if (st.session_state.current_state=="homePage"):
+        st.header("Welcome To Benchmarking")
         isVideo = False
         if (st.session_state.current_dir_path.endswith(('.mp4', '.avi','.mov','.AVI'))):
             isVideo = True
