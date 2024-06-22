@@ -105,7 +105,7 @@ def BenchMarking(source_path, zones_IN_configuration_path, weight_path, dataFram
                     print_iter[iter_count] = True
                 
                 zone_dict["Time"] = dataFrame.iloc[(FRAME_NUM//int(time_analysis*60*24))][0]
-                st.write(str(zone_id[zone])+" : "+str(dataFrame.iloc[(FRAME_NUM//int(time_analysis*60*24))][in_map[zone_id[zone]]]/(zone_dict[zone_id[zone]]*3)))
+                st.write(str(zone_id[zone])+" : "+str(round(dataFrame.iloc[(FRAME_NUM//int(time_analysis*60*24))][in_map[zone_id[zone]]]/(zone_dict[zone_id[zone]]*3),2)))
                 
                 if(zone_dict not in csv_list):
                     csv_list.append(zone_dict)
