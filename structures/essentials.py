@@ -1,5 +1,10 @@
 from ultralytics import YOLO
-
+import re
+import json
+from trycourier import Courier
+import secrets
+from argon2 import PasswordHasher
+import requests
 import cv2
 
 import supervision as sv
@@ -265,4 +270,22 @@ def drop(path_csv, csv_list):
     df = pandas.read_csv(path_csv)
     df.drop_duplicates(subset=csv_list)
     df.to_csv(path_csv, index= False)
+
+def send_ping( email: str, file: str, company_name: str = "S.A.D.A.K"):
+    #if(auth_token == st.secrets["CRYPTO_KEY"]):
+        client = Courier(auth_token = st.secrets["COURIER_API_KEY"])
+        resp = client.send_message(
+        message={
+            "to": {
+            "email": email
+            },
+            "content": {
+            "title": company_name + ": Encroachment Detected:",
+            "body": "Hi! " + email + "," + "\n" + "\n" + f"Encroachment has been detected at: {file} "  + "\n" + "\n" + "{{info}}"
+            },
+            "data":{
+            "info": "Please take care of the violation immediately."
+            },
         
+        }
+        )
