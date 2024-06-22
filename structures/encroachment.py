@@ -16,9 +16,8 @@ from inference import get_roboflow_model
 from utils.general import find_in_list, load_zones_config
 from utils.timers import FPSBasedTimer
 from inference import InferencePipeline
-from structures.essentials import save_to_csv, encrypt_it,make_headings, drop
+from structures.essentials import save_to_csv, encrypt_it,make_headings, drop, send_ping
 from structures.CustomSink import CustomSink
-
 KEY_ENTER = 13
 KEY_NEWLINE = 10
 KEY_ESCAPE = 27
@@ -46,6 +45,8 @@ def timedetect(source_path, zone_configuration_path, violation_time, confidence,
     color=COLORS, text_color=sv.Color.from_hex("#000000")
     )
     
+    if "terminate" not in st.session_state:
+        st.session_state["terminate"] = False
     csv_list =[]
     alert_dicts = {}
     time_in_seconds = False
@@ -54,10 +55,10 @@ def timedetect(source_path, zone_configuration_path, violation_time, confidence,
         time_in_minutes = True
     else:
         time_in_seconds = True
-    model_id = "yolov8m-640"
-    classes = [2,5,6,7]
+    model_id = "custom"
+    classes = [2,5,6,7,121]
     iou = 0.7
-    model = get_roboflow_model(model_id=model_id)
+    model = YOLO("weights/best_ps3.pt")
     tracker = sv.ByteTrack(minimum_matching_threshold=confidence)
     video_info = sv.VideoInfo.from_video_path(video_path=source_path)
     frames_generator = sv.get_video_frames_generator(source_path)
@@ -72,24 +73,27 @@ def timedetect(source_path, zone_configuration_path, violation_time, confidence,
         for polygon in polygons
     ]
     timers = [FPSBasedTimer(video_info.fps) for _ in zones]
-
+                                
     vid_cap = cv2.VideoCapture(source_path)
     st_frame = st.empty()
     
     while(vid_cap.isOpened()):
-         
+         if(not st.session_state["terminate"]):
+                terminate = st.button("Terminate")
                 success = vid_cap.read()
                 st.subheader(COMPONENTS[language]["ALERTS"])
                 if success:
+                        
                         for frame in frames_generator:
-                            results = model.infer(frame, confidence=confidence, iou_threshold=iou)[0]
-                            detections = sv.Detections.from_inference(results)
+                            
+                            results = model(frame, verbose=False, device="cpu", conf=confidence)[0]
+                            detections = sv.Detections.from_ultralytics(results)
                             detections = detections[find_in_list(detections.class_id, classes)]
+                            detections = detections.with_nms(threshold=iou)
                             detections = tracker.update_with_detections(detections)
 
                             annotated_frame = frame.copy()
                             
-
                             for idx, zone in enumerate(zones):
                                 annotated_frame = sv.draw_polygon(
                                     scene=annotated_frame, polygon=zone.polygon, color=COLORS.by_idx(idx)
@@ -128,6 +132,7 @@ def timedetect(source_path, zone_configuration_path, violation_time, confidence,
                                                 alert_dicts["Location"] = idx
                                                 s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: "+str(idx)
                                                 st.warning(s, icon= "⚠️")
+                                                send_ping(email="mangalsaativk@gmail.com",file=s)
                                                 displayed[tracker_ID] = 1
                                                 if(alert_dicts not in csv_list):                                            
                                                     csv_list.append(alert_dicts)
@@ -154,6 +159,7 @@ def timedetect(source_path, zone_configuration_path, violation_time, confidence,
                                                 alert_dicts["Location"] = str(idx)
                                                 s = "Tracker_ID:" + str(tracker_ID) + " Class: " + cla + " Location: "+str(idx)
                                                 st.warning(s, icon= "⚠️")
+                                                send_ping(email="mangalsaatvik@gmail.com",file=s)
                                                 displayed[tracker_ID] = 1  
                                                 if(alert_dicts not in csv_list):                                          
                                                     csv_list.append(alert_dicts)
@@ -174,9 +180,9 @@ def timedetect(source_path, zone_configuration_path, violation_time, confidence,
                                     caption='Detected Video',
                                     channels="BGR",
                                     use_column_width=True)
-
-                
-
+    if(st.session_state["terminate"]):
+        st.success("Stream Terminated")
+        st.session_state["terminate"] = False
 
 
 def livedetection(source_url: str, violation_time: int, zone_configuration_path: str, confidence: float, analysis_path: str):
